@@ -1,5 +1,5 @@
 {
-  "name": "@zerobrix/auth",
+  "name": "@zerocat-software/zerobrix-auth",
   "version": "1.0.0",
   "description": "Authentication library to add ZeroBrix Wallet authentication protocol.",
   "main": "dist/index.js",

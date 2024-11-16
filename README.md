@@ -8,7 +8,7 @@ This guide will walk you through implementing ZEROCAT's wallet-based Web3 authen
 
 ```bash
 # Install the main package
-npm install @zerobrix/auth
+npm install @zerocat-software/zerobrix-auth
 
 # Install peer dependencies
 npm install @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select
@@ -41,7 +41,7 @@ Update your `tailwind.config.js` to include the required styles:
 module.exports = {
   content: [
     // ... your existing content
-    "./node_modules/@zerobrix/auth/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -68,7 +68,7 @@ Create the authentication API route in your Next.js app:
 
 ```typescript
 // app/api/wallet-auth/route.ts
-import { createWalletAuthHandler } from '@zerobrix/auth/server';
+import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
 import { db } from '@/lib/db'; // Your database instance
 
 export const { GET, POST } = createWalletAuthHandler({
@@ -109,8 +109,8 @@ Create your authentication page:
 // app/auth/page.tsx
 'use client';
 
-import { WalletAuth } from '@zerobrix/auth/react';
-import type { User } from '@zerobrix/auth/types';
+import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
+import type { User } from '@zerocat-software/zerobrix-auth/types';
 import { useRouter } from 'next/navigation';
 
 export default function AuthPage() {
