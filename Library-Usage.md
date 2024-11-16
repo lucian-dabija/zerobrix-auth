@@ -4,7 +4,7 @@
 
 ### 1. Full Library Import
 ```typescript
-import { WalletAuth, createWalletAuthHandler } from '@zerocat/auth';
+import { WalletAuth, createWalletAuthHandler } from '@zerocat-software/zerobrix-auth';
 
 // Use components and utilities
 const MyComponent = () => <WalletAuth ... />;
@@ -13,7 +13,7 @@ export const { GET, POST } = createWalletAuthHandler(...);
 
 ### 2. React Components Only
 ```typescript
-import { WalletAuth } from '@zerocat/auth/react';
+import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
 
 // Only imports the React components, keeping bundle size smaller
 const MyComponent = () => <WalletAuth ... />;
@@ -21,7 +21,7 @@ const MyComponent = () => <WalletAuth ... />;
 
 ### 3. Server Utilities Only
 ```typescript
-import { createWalletAuthHandler } from '@zerocat/auth/server';
+import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
 
 // Only imports the server-side code
 export const { GET, POST } = createWalletAuthHandler(...);
@@ -29,7 +29,7 @@ export const { GET, POST } = createWalletAuthHandler(...);
 
 ### 4. Types Only
 ```typescript
-import type { User, WalletAuthConfig } from '@zerocat/auth/types';
+import type { User, WalletAuthConfig } from '@zerocat-software/zerobrix-auth/types';
 
 // Use types in your TypeScript code
 const config: WalletAuthConfig = {
@@ -79,8 +79,8 @@ To make this work, you need to configure your `package.json` with the correct ex
 ### Frontend Page
 ```typescript
 // pages/auth.tsx
-import { WalletAuth } from '@zerocat/auth/react';
-import type { User } from '@zerocat/auth/types';
+import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
+import type { User } from '@zerocat-software/zerobrix-auth/types';
 
 export default function AuthPage() {
   const handleAuth = (user: User) => {
@@ -94,8 +94,8 @@ export default function AuthPage() {
 ### Backend API Route
 ```typescript
 // app/api/auth/route.ts
-import { createWalletAuthHandler } from '@zerocat/auth/server';
-import type { User } from '@zerocat/auth/types';
+import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
+import type { User } from '@zerocat-software/zerobrix-auth/types';
 
 export const { GET, POST } = createWalletAuthHandler({
   validateUser: async (address: string): Promise<User | null> => {
