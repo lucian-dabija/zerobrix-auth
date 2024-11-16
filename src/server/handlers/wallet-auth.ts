@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { WalletAuthHandlerConfig, AuthResponse, NonceResponse } from '../../types';
 
 const getEnvVariable = (name: string): string => {
@@ -19,7 +19,7 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
     'Content-Type': 'application/json'
   };
 
-  const GET = async (): Promise<NextResponse<NonceResponse>> => {
+  const GET = async (): Promise<Response> => {
     try {
       const response = await fetch(`${API_URL}?action=generateNonce&contractId=${CONTRACT_ID}`, {
         headers: { 'X-API-Key': API_KEY },
@@ -30,20 +30,34 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
       }
 
       const data = await response.json();
-      return NextResponse.json({ nonce: data.nonce });
+      
+      return new Response(
+        JSON.stringify({ nonce: data.nonce }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     } catch (error) {
       console.error('Error generating nonce:', error);
-      return NextResponse.json(
-        { error: 'Failed to generate nonce', nonce: '' }, 
-        { status: 500 }
+      
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate nonce', nonce: '' }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
     }
   };
 
-  const POST = async (req: NextRequest): Promise<NextResponse<AuthResponse>> => {
+  const POST = async (req: NextRequest): Promise<Response> => {
     try {
       const { nonce } = await req.json();
-
       const verifyResponse = await fetch(API_URL, {
         method: 'POST',
         headers,
@@ -62,28 +76,52 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
       const { authenticated, userAddress } = verifyData;
 
       if (!authenticated || !userAddress) {
-        return NextResponse.json(
-          { authenticated: false, error: 'Authentication failed' },
-          { status: 401 }
+        return new Response(
+          JSON.stringify({ authenticated: false, error: 'Authentication failed' }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
         );
       }
 
       if (config.customValidation) {
         const isValid = await config.customValidation(userAddress);
         if (!isValid) {
-          return NextResponse.json(
-            { authenticated: false, error: 'Custom validation failed' },
-            { status: 403 }
+          return new Response(
+            JSON.stringify({ authenticated: false, error: 'Custom validation failed' }),
+            {
+              status: 403,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
           );
         }
       }
 
-      return NextResponse.json({ authenticated: true, userAddress });
+      return new Response(
+        JSON.stringify({ authenticated: true, userAddress }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     } catch (error) {
       console.error('Error verifying authentication:', error);
-      return NextResponse.json(
-        { authenticated: false, error: 'Authentication verification failed' },
-        { status: 500 }
+      
+      return new Response(
+        JSON.stringify({ authenticated: false, error: 'Authentication verification failed' }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
     }
   };

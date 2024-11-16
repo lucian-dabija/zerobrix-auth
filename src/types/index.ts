@@ -1,3 +1,5 @@
+import type { NextRequest, NextResponse } from 'next/server';
+
 export interface User {
   wallet_address: string;
   first_name: string;
@@ -31,8 +33,8 @@ export interface WalletAuthConfig {
     container?: string;
     card?: string;
     button?: string;
-    input?: string;  // Added this
-    select?: string; // Added this
+    input?: string;
+    select?: string;
   };
 }
 
@@ -69,3 +71,8 @@ export interface UserDetails {
   email: string;
   role: string;
 }
+
+export type ApiHandler = {
+  GET: (req?: NextRequest) => Promise<Response>;
+  POST: (req: NextRequest) => Promise<Response>;
+};
