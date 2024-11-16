@@ -1,4 +1,4 @@
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export interface User {
   wallet_address: string;
@@ -36,17 +36,20 @@ export interface WalletAuthConfig {
     input?: string;
     select?: string;
   };
+  dbPath?: string;
 }
 
 export interface WalletAuthHandlerConfig {
-  validateUser: (walletAddress: string) => Promise<User | null>;
+  validateUser?: (walletAddress: string) => Promise<User | null>;
   onNewUser?: (user: NewUserData) => Promise<void>;
   customValidation?: (walletAddress: string) => Promise<boolean>;
+  dbPath?: string;
 }
 
 export interface AuthResponse {
   authenticated: boolean;
   userAddress?: string;
+  user?: User;
   error?: string;
 }
 
@@ -58,11 +61,13 @@ export interface NonceResponse {
 export interface WalletAuthProps {
   onAuthenticated: (user: User) => void;
   config: WalletAuthConfig;
+  onError?: (error: Error) => void;
 }
 
 export interface ZeroBrixAuthProps {
-  onAuthenticated: (walletAddress: string) => void;
+  onAuthenticated: (walletAddress: string, user?: User) => void;
   config: WalletAuthConfig;
+  onError?: (error: Error) => void;
 }
 
 export interface UserDetails {

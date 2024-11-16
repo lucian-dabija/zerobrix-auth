@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { WalletAuthHandlerConfig, AuthResponse, NonceResponse } from '../../types';
+import { db } from '../db';
 
 const getEnvVariable = (name: string): string => {
   const value = process.env[name];
@@ -9,7 +10,7 @@ const getEnvVariable = (name: string): string => {
   return value;
 };
 
-export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
+export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
   const API_URL = getEnvVariable('ZEROBRIX_API_URL');
   const API_KEY = getEnvVariable('ZEROBRIX_API_KEY');
   const CONTRACT_ID = getEnvVariable('AUTH_CONTRACT_ID');
@@ -18,6 +19,8 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
     'X-API-Key': API_KEY,
     'Content-Type': 'application/json'
   };
+
+  db.initialize().catch(console.error);
 
   const GET = async (): Promise<Response> => {
     try {
@@ -57,7 +60,9 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
 
   const POST = async (req: NextRequest): Promise<Response> => {
     try {
-      const { nonce } = await req.json();
+      const body = await req.json();
+      const { nonce, userData } = body;
+
       const verifyResponse = await fetch(API_URL, {
         method: 'POST',
         headers,
@@ -87,7 +92,7 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
         );
       }
 
-      if (config.customValidation) {
+      if (config?.customValidation) {
         const isValid = await config.customValidation(userAddress);
         if (!isValid) {
           return new Response(
@@ -102,15 +107,41 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
         }
       }
 
-      return new Response(
-        JSON.stringify({ authenticated: true, userAddress }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      try {
+        let user = await db.findUser(userAddress);
+
+        if (!user && userData) {
+          user = await db.createUser({
+            wallet_address: userAddress,
+            ...userData
+          });
         }
-      );
+
+        return new Response(
+          JSON.stringify({ 
+            authenticated: true, 
+            userAddress,
+            user: user || undefined 
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      } catch (error) {
+        console.error('Database error:', error);
+        return new Response(
+          JSON.stringify({ authenticated: true, userAddress, error: 'Database operation failed' }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
     } catch (error) {
       console.error('Error verifying authentication:', error);
       
