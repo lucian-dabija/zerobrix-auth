@@ -1,5 +1,3 @@
-// src/server/handlers/wallet-auth.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import { WalletAuthHandlerConfig, AuthResponse, NonceResponse } from '../../types';
 
@@ -46,7 +44,6 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
     try {
       const { nonce } = await req.json();
 
-      // Step 1: Verify the authentication with ZeroBrix
       const verifyResponse = await fetch(API_URL, {
         method: 'POST',
         headers,
@@ -71,7 +68,6 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
         );
       }
 
-      // Step 2: Custom validation if provided
       if (config.customValidation) {
         const isValid = await config.customValidation(userAddress);
         if (!isValid) {
@@ -95,5 +91,4 @@ export const createWalletAuthHandler = (config: WalletAuthHandlerConfig) => {
   return { GET, POST };
 };
 
-// Export the handler creator
 export default createWalletAuthHandler;

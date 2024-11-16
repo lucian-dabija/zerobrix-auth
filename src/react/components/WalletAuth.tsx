@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react';
 import type { WalletAuthProps, User, UserDetails } from '../../types';
 import { ZeroBrixAuth } from './ZeroBrixAuth';
 
-// Internal components - these would be bundled with the library
 import {
   Card,
   Input,
@@ -52,7 +51,6 @@ export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
     setError(null);
     
     try {
-      // Check if user exists
       const response = await fetch('/api/users/active', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -210,7 +208,6 @@ export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
           </Button>
         </form>
 
-        {/* Back button */}
         <Button
           variant="ghost"
           className="mt-4 w-full"

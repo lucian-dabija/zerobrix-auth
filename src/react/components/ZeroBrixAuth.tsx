@@ -9,13 +9,12 @@ import {
 } from 'lucide-react';
 import type { ZeroBrixAuthProps } from '../../types';
 
-// Internal components - these would be bundled with the library
 import {
   Card,
   Button,
   Dialog,
   DialogContent,
-} from './ui'; // We'll include minimal UI components
+} from './ui';
 
 export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
   const [stage, setStage] = useState<'intro' | 'qr' | 'polling'>('intro');
@@ -58,7 +57,6 @@ export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
 
       setPollingInterval(interval);
 
-      // Set 5-minute timeout
       const timeout = setTimeout(() => {
         cleanupTimers();
         setError('Authentication timeout. Please try again.');

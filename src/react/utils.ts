@@ -1,32 +1,19 @@
-// src/react/utils.ts
-
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-/**
- * Merge Tailwind CSS classes with clsx
- */
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/**
- * Validate wallet address format
- */
 export function isValidWalletAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
-/**
- * Create gradient string from theme colors
- */
 export function createGradient(from: string, to: string): string {
   return `bg-gradient-to-r from-${from}-600 to-${to}-600`;
 }
 
-/**
- * Format error message for display
- */
 export function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -37,9 +24,6 @@ export function formatErrorMessage(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
-/**
- * Create color variants for theme
- */
 export function createThemeColors(primary: string, secondary: string) {
   return {
     primary: {
