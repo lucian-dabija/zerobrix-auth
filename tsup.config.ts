@@ -7,14 +7,8 @@ export default defineConfig({
     'src/server/index.ts',
   ],
   format: ['cjs', 'esm'],
-  dts: {
-    resolve: true,
-  },
+  dts: true,
   clean: true,
-  splitting: false,
-  sourcemap: true,
-  minify: true,
-  treeshake: true,
   external: [
     'react',
     'react-dom',
@@ -25,6 +19,8 @@ export default defineConfig({
     'lucide-react',
     'framer-motion',
     'qrcode.react',
-    'tailwindcss'
-  ]
+    'tailwindcss',
+    'better-sqlite3'
+  ],
+  sourcemap: true,
 });
