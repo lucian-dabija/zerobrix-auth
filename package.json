@@ -1,6 +1,6 @@
 {
   "name": "@zerocat-software/zerobrix-auth",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Authentication library for ZeroBrix Blockchain-based applications with integrated SQLite user storage",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -35,20 +35,16 @@
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.mjs",
       "require": "./dist/server/index.js"
-    },
-    "./types": {
-      "types": "./dist/types/index.d.ts"
     }
   },
-  "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
       "*": ["./dist/index.d.ts"],
       "react": ["./dist/react/index.d.ts"],
-      "server": ["./dist/server/index.d.ts"],
-      "types": ["./dist/types/index.d.ts"]
+      "server": ["./dist/server/index.d.ts"]
     }
   },
+  "types": "./dist/index.d.ts",
   "keywords": [
     "zerocat",
     "authentication",

@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 import type { NextRequest } from 'next/server';
 
 export interface User {
@@ -77,7 +79,11 @@ export interface UserDetails {
   role: string;
 }
 
-export type ApiHandler = {
-  GET: (req?: NextRequest) => Promise<Response>;
-  POST: (req: NextRequest) => Promise<Response>;
-};
+export interface DatabaseInterface {
+  initialize(): Promise<void>;
+  findUser(walletAddress: string): Promise<User | null>;
+  createUser(userData: NewUserData): Promise<User>;
+  updateUser(walletAddress: string, updates: Partial<User>): Promise<User | null>;
+  deleteUser(walletAddress: string): Promise<boolean>;
+  close(): Promise<void>;
+}

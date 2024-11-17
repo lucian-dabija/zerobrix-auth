@@ -264,16 +264,33 @@ By default, the database is created in `./data/users.db`. Ensure this directory 
 - Included in `.gitignore`
 - Has write permissions
 
-## TypeScript Types
+### Using Types
 
-All types are exported from the package:
+Import types directly from the main package:
 
 ```typescript
-import type { 
-  User, 
-  WalletAuthConfig,
-  DatabaseInterface 
-} from '@zerocat-software/zerobrix-auth/types';
+import type { User, WalletAuthConfig } from '@zerocat-software/zerobrix-auth';
+
+// Example usage in your auth page
+import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
+import type { User } from '@zerocat-software/zerobrix-auth';
+
+export default function AuthPage() {
+  const handleAuthenticated = (user: User) => {
+    console.log('Authenticated user:', user);
+  };
+
+  return (
+    <WalletAuth 
+      onAuthenticated={handleAuthenticated}
+      config={{
+        appName: "Your App",
+        appDescription: "Secure authentication"
+      }}
+    />
+  );
+}
+```
 ```
 
 ## Contributing
