@@ -1,4 +1,7 @@
-export { createWalletAuthHandler } from './handlers/wallet-auth';
-export { SQLiteDatabase } from './db/sqlite';
-export { db as default } from './db';
+import { createWalletAuthHandler } from './handlers/wallet-auth';
+import { SQLiteDatabase } from './db/sqlite';
+import { db } from './db';
 export type { DatabaseInterface } from './db/interface';
+export { SQLiteDatabase };
+export { db };
+export { createWalletAuthHandler };

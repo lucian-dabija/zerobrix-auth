@@ -40,10 +40,11 @@ NEXT_PUBLIC_ZEROCOIN_TOKEN_ID=your_token_id
 
 ### 3. API Route Setup
 
+
 Create `app/api/wallet-auth/route.ts`:
 
 ```typescript
-import { createWalletAuthHandler, default as db } from '@zerocat-software/zerobrix-auth/server';
+import { createWalletAuthHandler, db } from '@zerocat-software/zerobrix-auth/server';
 
 export const { GET, POST } = createWalletAuthHandler({
   // Optional: Custom database path (default is './data/users.db')
@@ -55,6 +56,49 @@ export const { GET, POST } = createWalletAuthHandler({
     return !!user;
   }
 });
+```
+
+### Database Operations
+
+```typescript
+import { db } from '@zerocat-software/zerobrix-auth/server';
+
+// Find a user
+const user = await db.findUser(walletAddress);
+
+// Create a user
+const newUser = await db.createUser({
+  wallet_address: '0x...',
+  first_name: 'John',
+  last_name: 'Doe',
+  email: 'john@example.com',
+  role: 'User'
+});
+
+// Update a user
+const updatedUser = await db.updateUser(walletAddress, {
+  email: 'new-email@example.com'
+});
+
+// Delete a user
+const deleted = await db.deleteUser(walletAddress);
+```
+
+### Custom Database Instance
+
+If you need a custom database instance with a different path:
+
+```typescript
+import { SQLiteDatabase } from '@zerocat-software/zerobrix-auth/server';
+
+// Create a custom instance with a specific path
+const customDb = SQLiteDatabase.getInstance('./custom/path/users.db');
+
+// Initialize it before use
+await customDb.initialize();
+
+// Use the custom instance
+const user = await customDb.findUser(walletAddress);
 ```
 
 ### 4. Authentication Page
@@ -127,48 +171,6 @@ module.exports = {
 };
 ```
 
-## Database Usage
-
-The library includes a SQLite database that automatically manages users. The database file is created at `./data/users.db` by default.
-
-### Database Operations
-
-```typescript
-import { default as db } from '@zerocat-software/zerobrix-auth/server';
-
-// Find a user
-const user = await db.findUser(walletAddress);
-
-// Create a user
-const newUser = await db.createUser({
-  wallet_address: '0x...',
-  first_name: 'John',
-  last_name: 'Doe',
-  email: 'john@example.com',
-  role: 'User'
-});
-
-// Update a user
-const updatedUser = await db.updateUser(walletAddress, {
-  email: 'new-email@example.com'
-});
-
-// Delete a user
-const deleted = await db.deleteUser(walletAddress);
-```
-
-### Database Schema
-
-```sql
-CREATE TABLE IF NOT EXISTS users (
-  wallet_address TEXT PRIMARY KEY,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  email TEXT,
-  role TEXT NOT NULL DEFAULT 'User',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
 
 ## Customization
 
