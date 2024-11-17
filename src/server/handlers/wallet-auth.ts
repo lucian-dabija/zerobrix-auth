@@ -11,19 +11,27 @@ const getEnvVariable = (name: string): string => {
 };
 
 export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
-  const API_URL = getEnvVariable('ZEROBRIX_API_URL');
-  const API_KEY = getEnvVariable('ZEROBRIX_API_KEY');
-  const CONTRACT_ID = getEnvVariable('AUTH_CONTRACT_ID');
-
-  const headers = {
-    'X-API-Key': API_KEY,
-    'Content-Type': 'application/json'
+  let isInitialized = false;
+  
+  const initialize = async () => {
+    if (!isInitialized) {
+      try {
+        await db.initialize();
+        isInitialized = true;
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+      }
+    }
   };
-
-  db.initialize().catch(console.error);
 
   const GET = async (): Promise<Response> => {
     try {
+      const API_URL = getEnvVariable('ZEROBRIX_API_URL');
+      const API_KEY = getEnvVariable('ZEROBRIX_API_KEY');
+      const CONTRACT_ID = getEnvVariable('AUTH_CONTRACT_ID');
+
+      await initialize();
+
       const response = await fetch(`${API_URL}?action=generateNonce&contractId=${CONTRACT_ID}`, {
         headers: { 'X-API-Key': API_KEY },
       });
@@ -60,8 +68,19 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
 
   const POST = async (req: NextRequest): Promise<Response> => {
     try {
+      const API_URL = getEnvVariable('ZEROBRIX_API_URL');
+      const API_KEY = getEnvVariable('ZEROBRIX_API_KEY');
+      const CONTRACT_ID = getEnvVariable('AUTH_CONTRACT_ID');
+
+      await initialize();
+
       const body = await req.json();
       const { nonce, userData } = body;
+
+      const headers = {
+        'X-API-Key': API_KEY,
+        'Content-Type': 'application/json'
+      };
 
       const verifyResponse = await fetch(API_URL, {
         method: 'POST',
@@ -135,7 +154,7 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
         return new Response(
           JSON.stringify({ authenticated: true, userAddress, error: 'Database operation failed' }),
           {
-            status: 500,
+            status: 200,
             headers: {
               'Content-Type': 'application/json',
             },
@@ -159,5 +178,3 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
 
   return { GET, POST };
 };
-
-export default createWalletAuthHandler;

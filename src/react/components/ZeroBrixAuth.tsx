@@ -16,25 +16,46 @@ import {
   DialogContent,
 } from './ui';
 
-export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
+interface ExtendedZeroBrixAuthProps extends ZeroBrixAuthProps {
+  stopPolling?: boolean;
+}
+
+export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = false }: ExtendedZeroBrixAuthProps) {
   const [stage, setStage] = useState<'intro' | 'qr' | 'polling'>('intro');
   const [qrData, setQrData] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [isPollingActive, setIsPollingActive] = useState(true);
 
   const cleanupTimers = () => {
-    if (pollingInterval) clearInterval(pollingInterval);
-    if (timeoutId) clearTimeout(timeoutId);
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      setTimeoutId(null);
+    }
   };
 
   useEffect(() => {
     return () => cleanupTimers();
   }, []);
 
+  // Effect to handle polling state changes
   useEffect(() => {
-    if (stage === 'polling' && nonce) {
+    if (stopPolling) {
+      setIsPollingActive(false);
+      cleanupTimers();
+    } else {
+      setIsPollingActive(true);
+    }
+  }, [stopPolling]);
+
+  useEffect(() => {
+    if (stage === 'polling' && nonce && isPollingActive && !stopPolling) {
       const interval = setInterval(async () => {
         try {
           const response = await fetch('/api/wallet-auth', {
@@ -48,12 +69,17 @@ export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
           const data = await response.json();
           if (data.authenticated && data.userAddress) {
             cleanupTimers();
-            onAuthenticated(data.userAddress);
+            onAuthenticated(data.userAddress, data.user);
+            
+            // Handle page refresh if configured
+            if (config.refreshPageOnAuth) {
+              window.location.reload();
+            }
           }
         } catch (error) {
           console.error('Polling error:', error);
         }
-      }, 3000);
+      }, config.timeouts?.polling || 3000);
 
       setPollingInterval(interval);
 
@@ -61,13 +87,13 @@ export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
         cleanupTimers();
         setError('Authentication timeout. Please try again.');
         setStage('intro');
-      }, 300000);
+      }, config.timeouts?.authentication || 300000);
 
       setTimeoutId(timeout);
 
       return () => cleanupTimers();
     }
-  }, [stage, nonce, onAuthenticated]);
+  }, [stage, nonce, onAuthenticated, isPollingActive, stopPolling, config]);
 
   const generateQR = async () => {
     try {
@@ -99,6 +125,7 @@ export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
     setQrData(null);
     setNonce(null);
     setStage('intro');
+    setIsPollingActive(true);
   };
 
   const {
@@ -106,17 +133,24 @@ export function ZeroBrixAuth({ onAuthenticated, config }: ZeroBrixAuthProps) {
     customStyles = {}
   } = config;
 
-  const getGradientStyle = () => {
-    return {
-      backgroundImage: `
-        radial-gradient(circle at top left, ${theme.primary}10, transparent),
-        radial-gradient(circle at bottom right, ${theme.secondary}10, transparent)
-      `
-    };
-  };
-
   return (
     <div className={`min-h-screen flex items-center justify-center ${customStyles.container || ''}`}>
+      {/* ZeroCat Logo */}
+      <div className="fixed bottom-4 right-4 w-32 h-14 opacity-70 hover:opacity-100 transition-opacity">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 60">
+          <defs>
+            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style={{ stopColor: `#${theme.primary}`, stopOpacity: 1 }} />
+              <stop offset="100%" style={{ stopColor: `#${theme.secondary}`, stopOpacity: 1 }} />
+            </linearGradient>
+          </defs>
+          <path d="M20 15 h100 v30 h-100 Z" fill="none" stroke="url(#logoGradient)" strokeWidth="2"/>
+          <text x="70" y="35" textAnchor="middle" fill="url(#logoGradient)" fontFamily="Arial" fontWeight="bold" fontSize="14">
+            ZEROCAT
+          </text>
+        </svg>
+      </div>
+
       <Card className={`w-full max-w-md p-6 ${customStyles.card || ''}`}>
         <AnimatePresence mode="wait">
           {stage === 'intro' && (

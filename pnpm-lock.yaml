@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       better-sqlite3:
-        specifier: ^9.6.0
+        specifier: ^9.4.3
         version: 9.6.0
       clsx:
         specifier: ^2.1.1

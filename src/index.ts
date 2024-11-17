@@ -1,12 +1,15 @@
-import { WalletAuth, ZeroBrixAuth } from './react';
-import { createWalletAuthHandler } from './server';
-import type * as Types from './types';
-
-export {
-  WalletAuth,
-  ZeroBrixAuth,
+export type {
+    User,
+    NewUserData,
+    WalletAuthConfig,
+    WalletAuthHandlerConfig,
+    AuthResponse,
+    NonceResponse,
+    WalletAuthProps,
+    ZeroBrixAuthProps,
+    UserDetails,
+    DatabaseInterface
+  } from './types';
   
-  createWalletAuthHandler,
-  
-  Types
-};
+  export * from './react';
+  export * from './server';

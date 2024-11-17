@@ -17,6 +17,17 @@ export interface NewUserData {
   role?: string;
 }
 
+export interface QRCodeConfig {
+  size?: number;
+  level?: 'L' | 'M' | 'Q' | 'H';
+  imageSettings?: {
+    src?: string;
+    height?: number;
+    width?: number;
+    excavate?: boolean;
+  };
+}
+
 export interface WalletAuthConfig {
   appName: string;
   appDescription: string;
@@ -37,6 +48,12 @@ export interface WalletAuthConfig {
     select?: string;
   };
   dbPath?: string;
+  qrCode?: QRCodeConfig;
+  timeouts?: {
+    authentication?: number;
+    polling?: number;
+  };
+  refreshPageOnAuth?: boolean;
 }
 
 export interface WalletAuthHandlerConfig {
@@ -77,7 +94,11 @@ export interface UserDetails {
   role: string;
 }
 
-export type ApiHandler = {
-  GET: (req?: NextRequest) => Promise<Response>;
-  POST: (req: NextRequest) => Promise<Response>;
-};
+export interface DatabaseInterface {
+  initialize(): Promise<void>;
+  findUser(walletAddress: string): Promise<User | null>;
+  createUser(userData: NewUserData): Promise<User>;
+  updateUser(walletAddress: string, updates: Partial<User>): Promise<User | null>;
+  deleteUser(walletAddress: string): Promise<boolean>;
+  close(): Promise<void>;
+}

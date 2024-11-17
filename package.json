@@ -1,28 +1,26 @@
 {
   "name": "@zerocat-software/zerobrix-auth",
-  "version": "1.0.2",
-  "description": "Authentication library for ZeroBrix applications with integrated SQLite user storage",
+  "version": "1.0.7",
+  "description": "Authentication library for ZeroBrix Blockchain-based applications with integrated SQLite user storage",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rimraf ./dist",
     "lint": "eslint ./src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "verify": "tsx scripts/verify-build.ts",
-    "build:full": "pnpm clean && pnpm build && pnpm verify",
+    "build:full": "pnpm clean && pnpm build",
     "prepublishOnly": "pnpm build:full",
-    "preinstall": "npx only-allow pnpm"
+    "postinstall": "node scripts/postinstall.js"
   },
   "files": [
     "dist",
-    "react",
-    "server"
+    "scripts",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
-    "./package.json": "./package.json",
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
@@ -39,6 +37,14 @@
       "require": "./dist/server/index.js"
     }
   },
+  "typesVersions": {
+    "*": {
+      "*": ["./dist/index.d.ts"],
+      "react": ["./dist/react/index.d.ts"],
+      "server": ["./dist/server/index.d.ts"]
+    }
+  },
+  "types": "./dist/index.d.ts",
   "keywords": [
     "zerocat",
     "authentication",
@@ -51,26 +57,23 @@
   "author": "ZEROCAT",
   "license": "MIT",
   "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
     "@radix-ui/react-dialog": "^1.0.0",
     "@radix-ui/react-label": "^2.0.0",
     "@radix-ui/react-select": "^2.0.0",
-    "framer-motion": "^10.0.0 || ^11.0.0",
+    "tailwindcss": "^3.0.0",
     "lucide-react": "^0.263.1 || ^0.460.0",
-    "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
-    "qrcode.react": "^3.0.0 || ^4.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "tailwindcss": "^3.0.0"
+    "framer-motion": "^10.0.0 || ^11.0.0",
+    "qrcode.react": "^3.0.0 || ^4.0.0"
   },
   "dependencies": {
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^9.4.3",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
-    "@radix-ui/react-dialog": "^1.1.2",
-    "@radix-ui/react-label": "^2.1.0",
-    "@radix-ui/react-select": "^2.1.2",
     "@types/better-sqlite3": "^7.6.9",
     "@types/node": "^20.17.6",
     "@types/react": "^18.3.12",
@@ -80,15 +83,21 @@
     "eslint": "^9.15.0",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "tsx": "^4.7.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "next": "^14.0.3",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.460.0",
-    "next": "^14.0.3",
     "qrcode.react": "^4.1.0",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwindcss": "^3.4.15",
-    "tsup": "^8.3.5",
-    "tsx": "^4.7.1",
-    "typescript": "^5.6.3"
+    "tailwindcss": "^3.4.15"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
