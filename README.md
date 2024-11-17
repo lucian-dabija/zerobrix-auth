@@ -1,6 +1,6 @@
 # @zerocat-software/zerobrix-auth
 
-A core, standalone authentication solution for ZeroBrix Wallet Authentication (Signed Transaction) with integrated SQLite user storage.
+A complete authentication solution for ZeroBrix with integrated SQLite user storage.
 
 ## Features
 
@@ -16,9 +16,15 @@ A core, standalone authentication solution for ZeroBrix Wallet Authentication (S
 pnpm add @zerocat-software/zerobrix-auth
 ```
 
+### Required peer dependencies
+```bash
+pnpm add @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select \
+        lucide-react framer-motion qrcode.react tailwindcss
+```
+
 ## Basic Usage
 
-1. Set up environment variables:
+1. Set up environment variables in your `.env.local`:
 
 ```env
 ZEROBRIX_API_URL=https://brix.zerocat.one/api/v2
@@ -32,16 +38,16 @@ NEXT_PUBLIC_ZEROCOIN_TOKEN_ID=your_token_id
 
 ```typescript
 // app/api/wallet-auth/route.ts
-import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
+import { createWalletAuthHandler, defaultDb } from '@zerocat-software/zerobrix-auth/server';
 
 export const { GET, POST } = createWalletAuthHandler({
-  // Optional custom database path
-  dbPath: './custom/path/to/users.db',
+  // Optional: Custom database path
+  dbPath: './data/users.db',
   
-  // Optional custom validation
+  // Optional: Custom validation
   customValidation: async (walletAddress: string) => {
-    // Add your custom validation logic
-    return true;
+    const user = await defaultDb.findUser(walletAddress);
+    return !!user;
   }
 });
 ```
@@ -53,13 +59,18 @@ export const { GET, POST } = createWalletAuthHandler({
 'use client';
 
 import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
+import type { User } from '@zerocat-software/zerobrix-auth/types';
 
 export default function AuthPage() {
+  const handleAuthenticated = (user: User) => {
+    console.log('Authenticated user:', user);
+    // Handle successful authentication
+    // e.g., store user data, redirect, etc.
+  };
+
   return (
     <WalletAuth 
-      onAuthenticated={(user) => {
-        console.log('Authenticated user:', user);
-      }}
+      onAuthenticated={handleAuthenticated}
       config={{
         appName: "Your App",
         appDescription: "Secure authentication with ZeroBrix",
@@ -68,6 +79,10 @@ export default function AuthPage() {
           secondary: "teal"
         }
       }}
+      onError={(error) => {
+        console.error('Authentication error:', error);
+        // Handle error (e.g., show toast notification)
+      }}
     />
   );
 }
@@ -75,7 +90,37 @@ export default function AuthPage() {
 
 ## Database Usage
 
-The library includes a built-in SQLite database for user storage. The database is automatically initialized and managed.
+### Using the Default Database Instance
+
+```typescript
+import { defaultDb } from '@zerocat-software/zerobrix-auth/server';
+
+// Find a user
+const user = await defaultDb.findUser(walletAddress);
+
+// Create a user
+const newUser = await defaultDb.createUser({
+  wallet_address: '0x...',
+  first_name: 'John',
+  last_name: 'Doe',
+  email: 'john@example.com',
+  role: 'User'
+});
+```
+
+### Creating a Custom Database Instance
+
+```typescript
+import { SQLiteDatabase } from '@zerocat-software/zerobrix-auth/server';
+
+const db = SQLiteDatabase.getInstance('./custom/path/users.db');
+
+// Initialize the database (creates tables if they don't exist)
+await db.initialize();
+
+// Use the database
+const user = await db.findUser(walletAddress);
+```
 
 ### Database Schema
 
@@ -90,18 +135,17 @@ CREATE TABLE IF NOT EXISTS users (
 );
 ```
 
-### Direct Database Access
-
-You can access the database directly if needed:
+### Available Database Operations
 
 ```typescript
-import { db } from '@zerocat-software/zerobrix-auth/server';
+import { defaultDb } from '@zerocat-software/zerobrix-auth/server';
+import type { User } from '@zerocat-software/zerobrix-auth/types';
 
-// Find a user
-const user = await db.findUser(walletAddress);
+// Find user
+const user = await defaultDb.findUser(walletAddress);
 
-// Create a user
-const newUser = await db.createUser({
+// Create user
+const newUser = await defaultDb.createUser({
   wallet_address: '0x...',
   first_name: 'John',
   last_name: 'Doe',
@@ -109,30 +153,33 @@ const newUser = await db.createUser({
   role: 'User'
 });
 
-// Update a user
-const updatedUser = await db.updateUser(walletAddress, {
+// Update user
+const updatedUser = await defaultDb.updateUser(walletAddress, {
   email: 'newemail@example.com'
 });
 
-// Delete a user
-const deleted = await db.deleteUser(walletAddress);
-```
-
-### Custom Database Path
-
-You can specify a custom path for the SQLite database:
-
-```typescript
-import { SQLiteDatabase } from '@zerocat-software/zerobrix-auth/server';
-
-const db = SQLiteDatabase.getInstance('./custom/path/to/users.db');
+// Delete user
+const deleted = await defaultDb.deleteUser(walletAddress);
 ```
 
 ## Customization
 
 ### Styling
 
-The library uses Tailwind CSS for styling. You can customize the appearance using the `customStyles` config:
+The library uses Tailwind CSS for styling. Add the component paths to your `tailwind.config.js`:
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    // ... your existing paths
+    "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
+  ],
+  // ... rest of your config
+}
+```
+
+You can customize the appearance using the `customStyles` config:
 
 ```typescript
 <WalletAuth 
@@ -150,46 +197,57 @@ The library uses Tailwind CSS for styling. You can customize the appearance usin
 
 ### Error Handling
 
-You can handle errors using the `onError` prop:
+Handle authentication and database errors:
 
 ```typescript
 <WalletAuth 
+  onAuthenticated={(user) => {
+    // Success handler
+  }}
   onError={(error) => {
+    // Error handler
     console.error('Auth error:', error);
-    // Handle error (e.g., show notification)
+    // Show error notification, etc.
   }}
 />
 ```
 
-## Migration
+## Data Migration
 
-If you need to migrate from a different database to SQLite:
+If you need to migrate existing user data:
 
 ```typescript
-import { db } from '@zerocat-software/zerobrix-auth/server';
+import { defaultDb } from '@zerocat-software/zerobrix-auth/server';
+import type { NewUserData } from '@zerocat-software/zerobrix-auth/types';
 
-async function migrateUsers(users: Array<{
-  wallet_address: string;
-  first_name: string;
-  last_name: string;
-  email?: string;
-  role?: string;
-}>) {
-  await db.initialize();
+async function migrateUsers(existingUsers: NewUserData[]) {
+  await defaultDb.initialize();
   
-  for (const user of users) {
-    await db.createUser(user);
+  for (const user of existingUsers) {
+    try {
+      await defaultDb.createUser(user);
+    } catch (error) {
+      console.error(`Failed to migrate user ${user.wallet_address}:`, error);
+    }
   }
 }
 ```
 
-## Security
+## Security Considerations
 
-The library uses SQLite's built-in security features and prepared statements to prevent SQL injection. All user data is properly sanitized before being stored in the database.
+- The library uses SQLite's prepared statements to prevent SQL injection
+- All user data is sanitized before storage
+- The database file is created with appropriate permissions
+- Wallet addresses are validated before storage
+
+## Known Limitations
+
+- SQLite is used in a file-based mode, suitable for small to medium applications
+- For high-concurrency scenarios, consider implementing a custom database adapter
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to our repository.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
