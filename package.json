@@ -1,6 +1,6 @@
 {
   "name": "@zerocat-software/zerobrix-auth",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "Authentication library for ZeroBrix Blockchain-based applications with integrated SQLite user storage",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

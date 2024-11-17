@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from './ui';
 
-export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
+export function WalletAuth({ onAuthenticated, config, onError }: WalletAuthProps) {
   const [isNewUser, setIsNewUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userDetails, setUserDetails] = useState<UserDetails>({
@@ -41,8 +41,16 @@ export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
   };
 
   const handleAuthenticationSuccess = async (user: User, address: string) => {
-    localStorage.setItem('wallet_address', address);
-    onAuthenticated(user);
+    try {
+      localStorage.setItem('wallet_address', address);
+      onAuthenticated(user);
+    } catch (error) {
+      console.error('Error saving authentication:', error);
+      setError('Failed to save authentication state');
+      if (onError) {
+        onError(error instanceof Error ? error : new Error('Authentication failed'));
+      }
+    }
   };
 
   const handleZeroBrixAuth = async (address: string) => {
@@ -60,7 +68,15 @@ export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
       const data = await response.json();
       
       if (response.ok) {
-        handleAuthenticationSuccess(data.user, address);
+        const formattedUser: User = {
+          wallet_address: data.user.wallet_id,
+          first_name: data.user.first_name || '',
+          last_name: data.user.last_name || '',
+          email: data.user.email || '',
+          role: data.user.role || 'User',
+          created_at: data.user.created_at
+        };
+        handleAuthenticationSuccess(formattedUser, address);
         return;
       } else if (response.status === 404) {
         setIsNewUser(true);
@@ -72,6 +88,9 @@ export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
     } catch (error) {
       console.error('Auth error:', error);
       setError(error instanceof Error ? error.message : 'Failed to connect to the server');
+      if (onError) {
+        onError(error instanceof Error ? error : new Error('Authentication failed'));
+      }
     } finally {
       setLoading(false);
     }
@@ -83,38 +102,53 @@ export function WalletAuth({ onAuthenticated, config }: WalletAuthProps) {
     setError(null);
     
     try {
-      const response = await fetch('/api/auth/wallet', {
+      const createResponse = await fetch('/api/users/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          wallet_address: walletAddress,
-          ...userDetails
+          wallet_id: walletAddress,
+          first_name: userDetails.first_name,
+          last_name: userDetails.last_name,
+          email: userDetails.email,
+          role: userDetails.role
         })
       });
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        handleAuthenticationSuccess(data.user, walletAddress);
-      } else {
-        throw new Error(data.error || 'Failed to create account');
+      if (!createResponse.ok) {
+        throw new Error('Failed to create user profile');
       }
+
+      const data = await createResponse.json();
+      
+      const user: User = {
+        wallet_address: data.user.wallet_id,
+        first_name: data.user.first_name,
+        last_name: data.user.last_name,
+        email: data.user.email,
+        role: data.user.role,
+        created_at: data.user.created_at
+      };
+
+      handleAuthenticationSuccess(user, walletAddress);
     } catch (error) {
-      console.error('Auth error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to connect to the server');
+      console.error('Registration error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create account');
+      if (onError) {
+        onError(error instanceof Error ? error : new Error('Registration failed'));
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  if (!isNewUser) {
+    return <ZeroBrixAuth onAuthenticated={handleZeroBrixAuth} config={config} onError={onError} />;
+  }
+
   const {
     theme = { primary: 'blue', secondary: 'teal' },
     customStyles = {}
   } = config;
-
-  if (!isNewUser) {
-    return <ZeroBrixAuth onAuthenticated={handleZeroBrixAuth} config={config} />;
-  }
 
   return (
     <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-${theme.primary}-50 via-${theme.secondary}-50 to-rose-50 dark:from-${theme.primary}-950 dark:via-${theme.secondary}-950 dark:to-rose-950 p-4 ${customStyles.container || ''}`}>

@@ -1,16 +1,17 @@
 import sqlite3 from 'better-sqlite3';
 import { join } from 'path';
+import { mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import { User, NewUserData } from '../../types';
 
 export class SQLiteDatabase {
   private static instance: SQLiteDatabase;
-  private db: sqlite3.Database;
+  private db: sqlite3.Database | null = null;
   private initialized: boolean = false;
+  private dbPath: string;
 
   private constructor(dbPath?: string) {
-    const defaultPath = join(process.cwd(), 'data', 'zerobrix-users.db');
-    this.db = sqlite3(dbPath || defaultPath);
-    this.db.pragma('journal_mode = WAL');
+    this.dbPath = dbPath || join(process.cwd(), 'data', 'zerobrix-users.db');
   }
 
   public static getInstance(dbPath?: string): SQLiteDatabase {
@@ -20,11 +21,28 @@ export class SQLiteDatabase {
     return SQLiteDatabase.instance;
   }
 
+  private async ensureDirectoryExists(): Promise<void> {
+    const dir = this.dbPath.substring(0, this.dbPath.lastIndexOf('/'));
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
+  }
+
+  private async getDatabase(): Promise<sqlite3.Database> {
+    if (!this.db) {
+      await this.ensureDirectoryExists();
+      this.db = new sqlite3(this.dbPath);
+      this.db.pragma('journal_mode = WAL');
+    }
+    return this.db;
+  }
+
   public async initialize(): Promise<void> {
     if (this.initialized) return;
 
     try {
-      this.db.exec(`
+      const db = await this.getDatabase();
+      db.exec(`
         CREATE TABLE IF NOT EXISTS users (
           wallet_address TEXT PRIMARY KEY,
           first_name TEXT NOT NULL,
@@ -46,7 +64,8 @@ export class SQLiteDatabase {
     await this.initialize();
 
     try {
-      const stmt = this.db.prepare(`
+      const db = await this.getDatabase();
+      const stmt = db.prepare(`
         SELECT * FROM users WHERE wallet_address = ?
       `);
       
@@ -72,7 +91,8 @@ export class SQLiteDatabase {
     await this.initialize();
 
     try {
-      const stmt = this.db.prepare(`
+      const db = await this.getDatabase();
+      const stmt = db.prepare(`
         INSERT INTO users (wallet_address, first_name, last_name, email, role)
         VALUES (?, ?, ?, ?, ?)
       `);
@@ -106,6 +126,7 @@ export class SQLiteDatabase {
     await this.initialize();
 
     try {
+      const db = await this.getDatabase();
       const updateFields = Object.keys(updates)
         .filter(key => key !== 'wallet_address' && key !== 'created_at')
         .map(key => `${key} = ?`)
@@ -117,7 +138,7 @@ export class SQLiteDatabase {
 
       if (!updateFields) return null;
 
-      const stmt = this.db.prepare(`
+      const stmt = db.prepare(`
         UPDATE users
         SET ${updateFields}
         WHERE wallet_address = ?
@@ -137,7 +158,8 @@ export class SQLiteDatabase {
     await this.initialize();
 
     try {
-      const stmt = this.db.prepare(`
+      const db = await this.getDatabase();
+      const stmt = db.prepare(`
         DELETE FROM users WHERE wallet_address = ?
       `);
 
@@ -154,6 +176,7 @@ export class SQLiteDatabase {
     if (this.db) {
       try {
         this.db.close();
+        this.db = null;
       } catch (error) {
         console.error('Error closing database:', error);
         throw error;

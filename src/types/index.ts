@@ -19,6 +19,17 @@ export interface NewUserData {
   role?: string;
 }
 
+export interface QRCodeConfig {
+  size?: number;
+  level?: 'L' | 'M' | 'Q' | 'H';
+  imageSettings?: {
+    src?: string;
+    height?: number;
+    width?: number;
+    excavate?: boolean;
+  };
+}
+
 export interface WalletAuthConfig {
   appName: string;
   appDescription: string;
@@ -39,6 +50,11 @@ export interface WalletAuthConfig {
     select?: string;
   };
   dbPath?: string;
+  qrCode?: QRCodeConfig;
+  timeouts?: {
+    authentication?: number;  // milliseconds
+    polling?: number;        // milliseconds
+  };
 }
 
 export interface WalletAuthHandlerConfig {

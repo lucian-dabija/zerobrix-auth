@@ -44,18 +44,47 @@ NEXT_PUBLIC_ZEROCOIN_TOKEN_ID=your_token_id
 Create `app/api/wallet-auth/route.ts`:
 
 ```typescript
-import { createWalletAuthHandler, db } from '@zerocat-software/zerobrix-auth/server';
+import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
+
+// IMPORTANT: Ensure your project's data directory exists
+// You can do this in your project's setup script:
+// mkdir -p data
+
+export const dynamic = 'force-dynamic'; // This is important for Next.js route handlers
 
 export const { GET, POST } = createWalletAuthHandler({
-  // Optional: Custom database path (default is './data/users.db')
-  dbPath: './data/custom-users.db',
+  // Optional: Custom database path
+  dbPath: './data/users.db', // This path is relative to your project root
   
   // Optional: Custom validation
   customValidation: async (walletAddress: string) => {
-    const user = await db.findUser(walletAddress);
-    return !!user;
+    // Add your custom validation logic here
+    return true;
   }
 });
+```
+
+## Database Setup
+
+The library uses SQLite for user storage. Ensure your project has the following setup:
+
+1. Create a `data` directory in your project root:
+```bash
+mkdir -p data
+```
+
+2. Add the following to your `.gitignore`:
+```
+# SQLite database files
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+```
+
+3. Ensure the `data` directory has write permissions:
+```bash
+chmod 755 data
 ```
 
 ### Database Operations
@@ -291,7 +320,124 @@ export default function AuthPage() {
   );
 }
 ```
+
+## Configuration Options
+
+The `WalletAuthConfig` supports several customization options:
+
+```typescript
+import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
+
+export default function AuthPage() {
+  return (
+    <WalletAuth 
+      onAuthenticated={(user) => {
+        console.log('Authenticated user:', user);
+      }}
+      config={{
+        // Basic configuration
+        appName: "Your App",
+        appDescription: "Secure authentication with ZeroBrix",
+        
+        // Theme colors
+        theme: {
+          primary: "blue",
+          secondary: "teal"
+        },
+        
+        // Custom logo
+        logo: {
+          src: "/your-logo.png",
+          width: 40,
+          height: 40
+        },
+        
+        // Custom styling
+        customStyles: {
+          container: "bg-gradient-custom",
+          card: "backdrop-blur-lg",
+          button: "material-button",
+          input: "material-input",
+          select: "material-select"
+        },
+        
+        // QR Code customization
+        qrCode: {
+          size: 256,
+          level: "M",
+          imageSettings: {
+            src: "/logo.png",
+            width: 40,
+            height: 40,
+            excavate: true
+          }
+        },
+        
+        // Timeouts (in milliseconds)
+        timeouts: {
+          authentication: 300000, // 5 minutes
+          polling: 3000         // 3 seconds
+        }
+      }}
+      onError={(error) => {
+        console.error('Auth error:', error);
+      }}
+    />
+  );
+}
 ```
+
+## Development vs Production
+
+The library handles database initialization differently in development and production:
+
+- In development: The database is created on-demand when the API routes are called
+- In production: Ensure the `data` directory exists before deployment
+
+For production deployments, add a build script to ensure the directory exists:
+
+```json
+{
+  "scripts": {
+    "prebuild": "mkdir -p data",
+    "build": "next build"
+  }
+}
+
+### Configuration Options Explained
+
+#### Basic Configuration
+- `appName`: Your application name (displayed in header)
+- `appDescription`: Brief description of your app
+
+#### Theme
+- `theme.primary`: Primary color for gradients and highlights
+- `theme.secondary`: Secondary color for gradients and accents
+
+#### Logo
+- `logo.src`: Path to your logo image
+- `logo.width`: Logo width in pixels
+- `logo.height`: Logo height in pixels
+
+#### Custom Styles
+- `customStyles.container`: Main container styling
+- `customStyles.card`: Authentication card styling
+- `customStyles.button`: Button styling
+- `customStyles.input`: Input field styling
+- `customStyles.select`: Select dropdown styling
+
+#### QR Code
+- `qrCode.size`: QR code size in pixels (default: 256)
+- `qrCode.level`: Error correction level ('L', 'M', 'Q', 'H')
+- `qrCode.imageSettings`: Logo overlay settings
+  - `src`: Logo image path
+  - `width`: Logo width
+  - `height`: Logo height
+  - `excavate`: Whether to make space for the logo
+
+#### Timeouts
+- `timeouts.authentication`: Overall auth timeout (default: 5 minutes)
+- `timeouts.polling`: Interval between auth checks (default: 3 seconds)
 
 ## Contributing
 
