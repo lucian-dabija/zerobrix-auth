@@ -2,6 +2,8 @@
 
 A complete authentication solution for ZeroBrix wallet authentication with integrated SQLite storage.
 
+![ZEROCAT Banner](./banner.png)
+
 ## Features
 
 - 🔐 ZeroBrix wallet authentication
@@ -11,6 +13,9 @@ A complete authentication solution for ZeroBrix wallet authentication with integ
 - 📱 Mobile-responsive design
 - 🔄 QR code & manual transaction support
 - 💫 Modern animations with Framer Motion
+- 🔄 Automatic page refresh support
+- 👤 Smooth new user onboarding
+- 🎯 Optimized polling behavior
 
 ## Quick Start
 
@@ -40,21 +45,16 @@ NEXT_PUBLIC_ZEROCOIN_TOKEN_ID=your_token_id
 
 ### 3. API Route Setup
 
-
 Create `app/api/wallet-auth/route.ts`:
 
 ```typescript
 import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
 
-// IMPORTANT: Ensure your project's data directory exists
-// You can do this in your project's setup script:
-// mkdir -p data
-
-export const dynamic = 'force-dynamic'; // This is important for Next.js route handlers
+export const dynamic = 'force-dynamic';
 
 export const { GET, POST } = createWalletAuthHandler({
   // Optional: Custom database path
-  dbPath: './data/users.db', // This path is relative to your project root
+  dbPath: './data/users.db',
   
   // Optional: Custom validation
   customValidation: async (walletAddress: string) => {
@@ -64,30 +64,142 @@ export const { GET, POST } = createWalletAuthHandler({
 });
 ```
 
-## Database Setup
+### 4. Authentication Component Setup
 
-The library uses SQLite for user storage. Ensure your project has the following setup:
+Create your authentication page (`app/auth/page.tsx`):
 
-1. Create a `data` directory in your project root:
-```bash
-mkdir -p data
+```typescript
+'use client';
+
+import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
+import type { User } from '@zerocat-software/zerobrix-auth';
+import { useRouter } from 'next/navigation';
+
+export default function AuthPage() {
+  const router = useRouter();
+
+  const handleAuthenticated = (user: User) => {
+    localStorage.setItem('wallet_address', user.wallet_address);
+    router.push('/dashboard');
+  };
+
+  return (
+    <WalletAuth 
+      onAuthenticated={handleAuthenticated}
+      config={{
+        appName: "Your App Name",
+        appDescription: "Secure authentication with ZeroBrix",
+        refreshPageOnAuth: true, // Enable automatic page refresh
+        theme: {
+          primary: "blue",
+          secondary: "teal"
+        },
+        timeouts: {
+          authentication: 300000, // 5 minutes
+          polling: 3000        // 3 seconds
+        }
+      }}
+      onError={(error) => {
+        console.error('Auth error:', error);
+      }}
+    />
+  );
+}
 ```
 
-2. Add the following to your `.gitignore`:
-```
-# SQLite database files
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
+### 5. Tailwind Configuration
+
+Update your `tailwind.config.js`:
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
+  ],
+  theme: {
+    extend: {}
+  },
+  plugins: []
+};
 ```
 
-3. Ensure the `data` directory has write permissions:
-```bash
-chmod 755 data
+## Configuration Options
+
+### WalletAuth Component
+
+```typescript
+interface WalletAuthConfig {
+  // Basic Configuration
+  appName: string;
+  appDescription: string;
+  
+  // Theme Configuration
+  theme?: {
+    primary: string;    // Tailwind color name
+    secondary: string;  // Tailwind color name
+  };
+  
+  // Logo Configuration (optional)
+  logo?: {
+    src: string;
+    width: number;
+    height: number;
+  };
+  
+  // Custom Styling
+  customStyles?: {
+    container?: string;  // Container class names
+    card?: string;      // Card class names
+    button?: string;    // Button class names
+    input?: string;     // Input field class names
+    select?: string;    // Select dropdown class names
+  };
+  
+  // Behavior Configuration
+  refreshPageOnAuth?: boolean;  // Auto refresh after auth
+  timeouts?: {
+    authentication?: number;  // Overall timeout (ms)
+    polling?: number;        // Polling interval (ms)
+  };
+  
+  // QR Code Configuration
+  qrCode?: {
+    size?: number;
+    level?: 'L' | 'M' | 'Q' | 'H';
+    imageSettings?: {
+      src?: string;
+      height?: number;
+      width?: number;
+      excavate?: boolean;
+    };
+  };
+}
 ```
 
-### Database Operations
+### Server Handler Configuration
+
+```typescript
+interface WalletAuthHandlerConfig {
+  // Custom user validation
+  validateUser?: (walletAddress: string) => Promise<User | null>;
+  
+  // New user callback
+  onNewUser?: (user: NewUserData) => Promise<void>;
+  
+  // Custom validation logic
+  customValidation?: (walletAddress: string) => Promise<boolean>;
+  
+  // Database configuration
+  dbPath?: string;
+}
+```
+
+## Database Operations
+
+### Basic CRUD Operations
 
 ```typescript
 import { db } from '@zerocat-software/zerobrix-auth/server';
@@ -115,124 +227,63 @@ const deleted = await db.deleteUser(walletAddress);
 
 ### Custom Database Instance
 
-If you need a custom database instance with a different path:
-
 ```typescript
 import { SQLiteDatabase } from '@zerocat-software/zerobrix-auth/server';
 
-// Create a custom instance with a specific path
 const customDb = SQLiteDatabase.getInstance('./custom/path/users.db');
-
-// Initialize it before use
 await customDb.initialize();
 
-// Use the custom instance
+// Use custom instance
 const user = await customDb.findUser(walletAddress);
 ```
 
-### 4. Authentication Page
+## Advanced Features
 
-Create `app/auth/page.tsx`:
+### 1. New User Onboarding
 
-```typescript
-'use client';
+The library provides a smooth onboarding experience for new users:
 
-import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
-import type { User } from '@zerocat-software/zerobrix-auth/types';
-import { useRouter } from 'next/navigation';
+- Automatic detection of new users
+- Form-based data collection
+- Optimized polling behavior during registration
+- Seamless transition to authenticated state
 
-export default function AuthPage() {
-  const router = useRouter();
+### 2. Authentication Flow
 
-  const handleAuthenticated = (user: User) => {
-    // Store authentication state
-    localStorage.setItem('wallet_address', user.wallet_address);
-    
-    // Example: redirect to dashboard
-    router.push('/dashboard');
-  };
+1. **Initial QR Code Generation**
+   - Secure nonce generation
+   - QR code display with custom logo
+   - Mobile-friendly scanning
 
-  return (
-    <WalletAuth 
-      onAuthenticated={handleAuthenticated}
-      config={{
-        appName: "Your App Name",
-        appDescription: "Secure authentication with ZeroBrix",
-        theme: {
-          primary: "blue",
-          secondary: "teal"
-        },
-        // Optional: Custom logo
-        logo: {
-          src: "/your-logo.png",
-          width: 40,
-          height: 40
-        }
-      }}
-      onError={(error) => {
-        console.error('Auth error:', error);
-        // Handle error (e.g., show notification)
-      }}
-    />
-  );
-}
-```
+2. **Transaction Verification**
+   - Smart contract interaction
+   - Automatic polling with configurable intervals
+   - Error handling and retry mechanisms
 
-### 5. Tailwind Configuration
+3. **User Management**
+   - Automatic user creation for new wallets
+   - Role-based access control
+   - Optional email collection
 
-Update your `tailwind.config.js`:
+### 3. Page Refresh Behavior
 
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    // Add this line to include the library's components
-    "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
-  ],
-  theme: {
-    extend: {
-      // Your theme customizations
-    }
-  },
-  plugins: []
-};
-```
-
-
-## Customization
-
-### Component Styling
-
-The library uses Tailwind CSS. Customize the appearance using the `customStyles` config:
+Control page refresh behavior after authentication:
 
 ```typescript
 <WalletAuth 
   config={{
-    customStyles: {
-      container: "bg-gradient-custom min-h-screen",
-      card: "backdrop-blur-lg bg-white/90",
-      button: "bg-gradient-to-r from-primary to-secondary",
-      input: "border-gray-300",
-      select: "border-gray-300"
+    refreshPageOnAuth: true,  // Enable auto-refresh
+    timeouts: {
+      authentication: 300000, // 5 minutes
+      polling: 3000          // 3 seconds
     }
   }}
 />
 ```
 
-### Authentication Flow
+### 4. Protected Routes
 
-The component handles:
-1. QR code generation for mobile wallet scanning
-2. Manual transaction instructions
-3. User data collection for new users
-4. Automatic database storage
-5. Success/error handling
-
-## Protected Routes
-
-Create a middleware to protect your routes:
+Implement route protection with middleware:
 
 ```typescript
 // middleware.ts
@@ -250,199 +301,106 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/profile/:path*',
-    // Add other protected routes
-  ],
+  matcher: ['/dashboard/:path*', '/profile/:path*']
 };
 ```
 
-## Common Issues
+## Styling and Customization
 
-### SQLite Binary Missing
-If you see SQLite-related errors, ensure you have the required build tools:
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install build-essential python3
-
-# macOS
-xcode-select --install
-
-# Windows
-npm install --global windows-build-tools
-```
-
-### Authentication Timeout
-The default timeout is 5 minutes. Handle the timeout in your error handler:
+### 1. Theme Customization
 
 ```typescript
-<WalletAuth 
-  onError={(error) => {
-    if (error.message.includes('timeout')) {
-      // Handle timeout specifically
-    }
-  }}
-/>
-```
-
-### Database File Location
-By default, the database is created in `./data/users.db`. Ensure this directory is:
-- Created automatically by the package
-- Included in `.gitignore`
-- Has write permissions
-
-### Using Types
-
-Import types directly from the main package:
-
-```typescript
-import type { User, WalletAuthConfig } from '@zerocat-software/zerobrix-auth';
-
-// Example usage in your auth page
-import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
-import type { User } from '@zerocat-software/zerobrix-auth';
-
-export default function AuthPage() {
-  const handleAuthenticated = (user: User) => {
-    console.log('Authenticated user:', user);
-  };
-
-  return (
-    <WalletAuth 
-      onAuthenticated={handleAuthenticated}
-      config={{
-        appName: "Your App",
-        appDescription: "Secure authentication"
-      }}
-    />
-  );
-}
-```
-
-## Configuration Options
-
-The `WalletAuthConfig` supports several customization options:
-
-```typescript
-import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
-
-export default function AuthPage() {
-  return (
-    <WalletAuth 
-      onAuthenticated={(user) => {
-        console.log('Authenticated user:', user);
-      }}
-      config={{
-        // Basic configuration
-        appName: "Your App",
-        appDescription: "Secure authentication with ZeroBrix",
-        
-        // Theme colors
-        theme: {
-          primary: "blue",
-          secondary: "teal"
-        },
-        
-        // Custom logo
-        logo: {
-          src: "/your-logo.png",
-          width: 40,
-          height: 40
-        },
-        
-        // Custom styling
-        customStyles: {
-          container: "bg-gradient-custom",
-          card: "backdrop-blur-lg",
-          button: "material-button",
-          input: "material-input",
-          select: "material-select"
-        },
-        
-        // QR Code customization
-        qrCode: {
-          size: 256,
-          level: "M",
-          imageSettings: {
-            src: "/logo.png",
-            width: 40,
-            height: 40,
-            excavate: true
-          }
-        },
-        
-        // Timeouts (in milliseconds)
-        timeouts: {
-          authentication: 300000, // 5 minutes
-          polling: 3000         // 3 seconds
-        }
-      }}
-      onError={(error) => {
-        console.error('Auth error:', error);
-      }}
-    />
-  );
-}
-```
-
-## Development vs Production
-
-The library handles database initialization differently in development and production:
-
-- In development: The database is created on-demand when the API routes are called
-- In production: Ensure the `data` directory exists before deployment
-
-For production deployments, add a build script to ensure the directory exists:
-
-```json
-{
-  "scripts": {
-    "prebuild": "mkdir -p data",
-    "build": "next build"
+const config = {
+  theme: {
+    primary: "blue",     // Any Tailwind color
+    secondary: "teal"    // Any Tailwind color
   }
-}
+};
+```
 
-### Configuration Options Explained
+### 2. Custom Styles
 
-#### Basic Configuration
-- `appName`: Your application name (displayed in header)
-- `appDescription`: Brief description of your app
+```typescript
+const config = {
+  customStyles: {
+    container: "bg-gradient-custom min-h-screen",
+    card: "backdrop-blur-lg bg-white/90",
+    button: "bg-gradient-to-r from-primary to-secondary",
+    input: "border-gray-300",
+    select: "border-gray-300"
+  }
+};
+```
 
-#### Theme
-- `theme.primary`: Primary color for gradients and highlights
-- `theme.secondary`: Secondary color for gradients and accents
+### 3. QR Code Customization
 
-#### Logo
-- `logo.src`: Path to your logo image
-- `logo.width`: Logo width in pixels
-- `logo.height`: Logo height in pixels
+```typescript
+const config = {
+  qrCode: {
+    size: 256,
+    level: "M",
+    imageSettings: {
+      src: "/logo.png",
+      height: 40,
+      width: 40,
+      excavate: true
+    }
+  }
+};
+```
 
-#### Custom Styles
-- `customStyles.container`: Main container styling
-- `customStyles.card`: Authentication card styling
-- `customStyles.button`: Button styling
-- `customStyles.input`: Input field styling
-- `customStyles.select`: Select dropdown styling
+## Troubleshooting
 
-#### QR Code
-- `qrCode.size`: QR code size in pixels (default: 256)
-- `qrCode.level`: Error correction level ('L', 'M', 'Q', 'H')
-- `qrCode.imageSettings`: Logo overlay settings
-  - `src`: Logo image path
-  - `width`: Logo width
-  - `height`: Logo height
-  - `excavate`: Whether to make space for the logo
+### Common Issues
 
-#### Timeouts
-- `timeouts.authentication`: Overall auth timeout (default: 5 minutes)
-- `timeouts.polling`: Interval between auth checks (default: 3 seconds)
+1. **SQLite Binary Missing**
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install build-essential python3
+
+   # macOS
+   xcode-select --install
+
+   # Windows
+   npm install --global windows-build-tools
+   ```
+
+2. **Authentication Timeout**
+   - Increase timeout values in config
+   - Check network connectivity
+   - Verify environment variables
+
+3. **Database Permissions**
+   - Ensure write permissions on data directory
+   - Check file ownership
+   - Verify path configuration
+
+### Best Practices
+
+1. **Security**
+   - Always use HTTPS in production
+   - Implement proper role validation
+   - Secure environment variables
+
+2. **Performance**
+   - Optimize polling intervals
+   - Use appropriate timeout values
+   - Enable page caching where appropriate
+
+3. **User Experience**
+   - Provide clear error messages
+   - Show loading states
+   - Implement proper validation feedback
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests.
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to our GitHub repository.
 
 ## License
 
 BSD-3-Clause © ZEROCAT
+
+## Support
+
+- Issues: [GitHub Issues](https://github.com/lucian-dabija/zerobrix-auth/issues)
+- Email: contact@zerocat.art

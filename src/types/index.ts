@@ -1,5 +1,3 @@
-// src/types/index.ts
-
 import type { NextRequest } from 'next/server';
 
 export interface User {
@@ -52,9 +50,10 @@ export interface WalletAuthConfig {
   dbPath?: string;
   qrCode?: QRCodeConfig;
   timeouts?: {
-    authentication?: number;  // milliseconds
-    polling?: number;        // milliseconds
+    authentication?: number;
+    polling?: number;
   };
+  refreshPageOnAuth?: boolean;
 }
 
 export interface WalletAuthHandlerConfig {
