@@ -1,10 +1,15 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 function ensureDirectoryExists(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
+}
+
+function generateEncryptionKey() {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 function setupDataDirectory() {
@@ -21,15 +26,18 @@ function setupDataDirectory() {
     fs.writeFileSync(gitignorePath, `
 # Database files
 *.json
+*.encrypted.json
 
 # Keep .gitkeep
 !.gitkeep
 `);
   }
 
-  const dbPath = path.join(dataDir, 'zerobrix-users.json');
-  if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify({ users: [] }, null, 2));
+  // Generate encryption key if not exists
+  const envPath = path.join(process.cwd(), '.env.local');
+  if (!fs.existsSync(envPath)) {
+    const encryptionKey = generateEncryptionKey();
+    fs.writeFileSync(envPath, `DB_ENCRYPTION_KEY=${encryptionKey}\n`, { flag: 'a' });
   }
 }
 
@@ -37,7 +45,7 @@ function init() {
   try {
     setupDataDirectory();
     console.log('✅ ZeroBrix Auth: Data directory initialized');
-    console.log('✅ ZeroBrix Auth: JSON database configured');
+    console.log('✅ ZeroBrix Auth: Encryption configured');
   } catch (error) {
     console.error('Error during post-install setup:', error);
     process.exit(1);

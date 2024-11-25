@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { WalletAuthHandlerConfig, AuthResponse, NonceResponse } from '../../types';
-import { db } from '../db';
+import type { WalletAuthHandlerConfig, AuthResponse, NonceResponse } from '../../types';
+import { EncryptedJSONDatabase } from '../db/encrypted-json-db';
 
 const getEnvVariable = (name: string): string => {
   const value = process.env[name];
@@ -11,6 +11,7 @@ const getEnvVariable = (name: string): string => {
 };
 
 export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
+  const db = EncryptedJSONDatabase.getInstance();
   let isInitialized = false;
   
   const initialize = async () => {
@@ -43,24 +44,20 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
       const data = await response.json();
       
       return new Response(
-        JSON.stringify({ nonce: data.nonce }),
+        JSON.stringify({ nonce: data.nonce } as NonceResponse),
         {
           status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
         }
       );
     } catch (error) {
       console.error('Error generating nonce:', error);
       
       return new Response(
-        JSON.stringify({ error: 'Failed to generate nonce', nonce: '' }),
+        JSON.stringify({ error: 'Failed to generate nonce', nonce: '' } as NonceResponse),
         {
           status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
         }
       );
     }
@@ -77,14 +74,12 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
       const body = await req.json();
       const { nonce, userData } = body;
 
-      const headers = {
-        'X-API-Key': API_KEY,
-        'Content-Type': 'application/json'
-      };
-
       const verifyResponse = await fetch(API_URL, {
         method: 'POST',
-        headers,
+        headers: {
+          'X-API-Key': API_KEY,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           action: 'verifyAuthentication',
           contractId: CONTRACT_ID,
@@ -101,12 +96,13 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
 
       if (!authenticated || !userAddress) {
         return new Response(
-          JSON.stringify({ authenticated: false, error: 'Authentication failed' }),
+          JSON.stringify({ 
+            authenticated: false, 
+            error: 'Authentication failed' 
+          } as AuthResponse),
           {
             status: 401,
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
           }
         );
       }
@@ -115,12 +111,13 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
         const isValid = await config.customValidation(userAddress);
         if (!isValid) {
           return new Response(
-            JSON.stringify({ authenticated: false, error: 'Custom validation failed' }),
+            JSON.stringify({ 
+              authenticated: false, 
+              error: 'Custom validation failed' 
+            } as AuthResponse),
             {
               status: 403,
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
             }
           );
         }
@@ -141,23 +138,23 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
             authenticated: true, 
             userAddress,
             user: user || undefined 
-          }),
+          } as AuthResponse),
           {
             status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
           }
         );
       } catch (error) {
         console.error('Database error:', error);
         return new Response(
-          JSON.stringify({ authenticated: true, userAddress, error: 'Database operation failed' }),
+          JSON.stringify({ 
+            authenticated: true, 
+            userAddress, 
+            error: 'Database operation failed' 
+          } as AuthResponse),
           {
             status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
           }
         );
       }
@@ -165,12 +162,13 @@ export const createWalletAuthHandler = (config?: WalletAuthHandlerConfig) => {
       console.error('Error verifying authentication:', error);
       
       return new Response(
-        JSON.stringify({ authenticated: false, error: 'Authentication verification failed' }),
+        JSON.stringify({ 
+          authenticated: false, 
+          error: 'Authentication verification failed' 
+        } as AuthResponse),
         {
           status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
         }
       );
     }

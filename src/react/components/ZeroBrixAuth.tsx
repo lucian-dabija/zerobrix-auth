@@ -3,28 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  Loader2, QrCode, Smartphone, ArrowRight,
-  RefreshCw, Download
-} from 'lucide-react';
-import type { ZeroBrixAuthProps } from '../../types';
-
-import {
-  Card,
-  Button,
-  Dialog,
-  DialogContent,
-} from './ui';
+import { Loader2, QrCode, Smartphone, ArrowRight, RefreshCw } from 'lucide-react';
+import type { ZeroBrixAuthProps, User } from '../../types';
+import { OnboardingForm } from './OnboardingForm';
+import { Card, Button } from './ui';
+import { fadeIn, slideUp } from '../utils';
 
 interface ExtendedZeroBrixAuthProps extends ZeroBrixAuthProps {
   stopPolling?: boolean;
 }
 
-export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = false }: ExtendedZeroBrixAuthProps) {
-  const [stage, setStage] = useState<'intro' | 'qr' | 'polling'>('intro');
+export function ZeroBrixAuth({
+  onAuthenticated,
+  config,
+  onError,
+  stopPolling = false
+}: ExtendedZeroBrixAuthProps) {
+  const [stage, setStage] = useState<'intro' | 'qr' | 'polling' | 'onboarding'>('intro');
   const [qrData, setQrData] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [isPollingActive, setIsPollingActive] = useState(true);
@@ -44,7 +43,6 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
     return () => cleanupTimers();
   }, []);
 
-  // Effect to handle polling state changes
   useEffect(() => {
     if (stopPolling) {
       setIsPollingActive(false);
@@ -58,7 +56,7 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
     if (stage === 'polling' && nonce && isPollingActive && !stopPolling) {
       const interval = setInterval(async () => {
         try {
-          const response = await fetch('/api/wallet-auth', {
+          const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nonce }),
@@ -69,11 +67,11 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
           const data = await response.json();
           if (data.authenticated && data.userAddress) {
             cleanupTimers();
-            onAuthenticated(data.userAddress, data.user);
-            
-            // Handle page refresh if configured
-            if (config.refreshPageOnAuth) {
-              window.location.reload();
+            if (data.user) {
+              onAuthenticated(data.userAddress, data.user);
+            } else {
+              setWalletAddress(data.userAddress);
+              setStage('onboarding');
             }
           }
         } catch (error) {
@@ -98,7 +96,7 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
   const generateQR = async () => {
     try {
       setError(null);
-      const response = await fetch('/api/wallet-auth');
+      const response = await fetch('/api/auth');
       const data = await response.json();
 
       if (!response.ok) {
@@ -116,6 +114,9 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
     } catch (error) {
       console.error('QR generation error:', error);
       setError('Failed to generate authentication code. Please try again.');
+      if (onError && error instanceof Error) {
+        onError(error);
+      }
     }
   };
 
@@ -124,8 +125,15 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
     setError(null);
     setQrData(null);
     setNonce(null);
+    setWalletAddress(null);
     setStage('intro');
     setIsPollingActive(true);
+  };
+
+  const handleOnboardingComplete = (user: User) => {
+    if (walletAddress) {
+      onAuthenticated(walletAddress, user);
+    }
   };
 
   const {
@@ -134,170 +142,165 @@ export function ZeroBrixAuth({ onAuthenticated, config, onError, stopPolling = f
   } = config;
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${customStyles.container || ''}`}>
-      {/* ZeroCat Logo */}
-      <div className="fixed bottom-4 right-4 w-32 h-14 opacity-70 hover:opacity-100 transition-opacity">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 60">
-          <defs>
-            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style={{ stopColor: `#${theme.primary}`, stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: `#${theme.secondary}`, stopOpacity: 1 }} />
-            </linearGradient>
-          </defs>
-          <path d="M20 15 h100 v30 h-100 Z" fill="none" stroke="url(#logoGradient)" strokeWidth="2"/>
-          <text x="70" y="35" textAnchor="middle" fill="url(#logoGradient)" fontFamily="Arial" fontWeight="bold" fontSize="14">
-            ZEROCAT
-          </text>
+    <Card className={`w-full max-w-md p-6 backdrop-blur-lg bg-white/10 ${customStyles.card || ''}`}>
+      <div className="absolute bottom-2 right-2 w-24 h-10 opacity-50">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" className="text-white">
+          <path d="M20 15h160v50H20z" fill="none" stroke="currentColor" strokeWidth="2"/>
+          <text x="100" y="45" textAnchor="middle" fill="currentColor" 
+                className="text-sm font-bold">ZEROCAT</text>
         </svg>
       </div>
 
-      <Card className={`w-full max-w-md p-6 ${customStyles.card || ''}`}>
-        <AnimatePresence mode="wait">
-          {stage === 'intro' && (
-            <motion.div
-              key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
-            >
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  {config.appName}
-                </h1>
-                <p className="text-muted-foreground">
-                  {config.appDescription}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
-                  <Smartphone className="h-6 w-6 text-blue-500 mt-1 shrink-0" />
-                  <div>
-                    <h3 className="font-medium">Get ZeroWallet Ready</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Download ZeroWallet from{' '}
-                      <a
-                        href="https://brix.zerocat.one/zerowallet-beta.apk"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline inline-flex items-center gap-1"
-                      >
-                        brix.zerocat.one
-                        <Download className="h-3 w-3" />
-                      </a>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
-                  <QrCode className="h-6 w-6 text-teal-500 mt-1 shrink-0" />
-                  <div>
-                    <h3 className="font-medium">Smart Transaction Auth</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Use ZeroWallet to scan a QR code for secure authentication.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Button 
-                className={`w-full ${customStyles.button || ''}`}
-                onClick={generateQR} 
-              >
-                Start Authentication
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </motion.div>
-          )}
-
-          {stage === 'qr' && qrData && (
-            <motion.div
-              key="qr"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-6"
-            >
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Scan QR Code</h2>
-                <p className="text-sm text-muted-foreground">
-                  Open ZeroWallet and scan this code to authenticate.
-                </p>
-              </div>
-
-              <div className="flex justify-center">
-                <div className="p-4 bg-white rounded-xl">
-                  <QRCodeSVG
-                    value={qrData}
-                    size={256}
-                    level="M"
-                    imageSettings={{
-                      src: config.logo?.src || "/icon-192x192.png",
-                      x: undefined,
-                      y: undefined,
-                      height: 40,
-                      width: 40,
-                      excavate: true,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-center space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  After scanning, approve the authentication transaction in your wallet and return here to continue.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setStage('polling')}
-                  className={`w-full ${customStyles.button || ''}`}
-                >
-                  I've Approved the Transaction
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {stage === 'polling' && (
-            <motion.div
-              key="polling"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-6 text-center"
-            >
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500" />
-              <div>
-                <h2 className="text-2xl font-bold">Verifying Authentication</h2>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Please wait while we confirm your transaction...
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {error && (
+      <AnimatePresence mode="wait">
+        {stage === 'intro' && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 bg-red-500/10 rounded-lg"
+            key="intro"
+            variants={slideUp}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            className="space-y-6"
           >
-            <p className="text-sm text-red-500 text-center">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-              onClick={handleRetry}
+            <div className="text-center space-y-2">
+              <h1 className={`text-3xl font-bold bg-gradient-to-r from-${theme.primary}-400 to-${theme.secondary}-400 bg-clip-text text-transparent`}>
+                {config.appName}
+              </h1>
+              <p className="text-white/70">
+                {config.appDescription}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-white/5">
+                <Smartphone className="h-6 w-6 text-blue-400 mt-1 shrink-0" />
+                <div>
+                  <h3 className="font-medium text-white">Get ZeroWallet Ready</h3>
+                  <p className="text-sm text-white/70">
+                    Ensure you have ZeroWallet installed and ready
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-white/5">
+                <QrCode className="h-6 w-6 text-teal-400 mt-1 shrink-0" />
+                <div>
+                  <h3 className="font-medium text-white">Smart Transaction Auth</h3>
+                  <p className="text-sm text-white/70">
+                    Scan QR code with ZeroWallet for secure login
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              className={`w-full bg-gradient-to-r from-${theme.primary}-500 to-${theme.secondary}-500 text-white ${customStyles.button}`}
+              onClick={generateQR}
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
+              Start Authentication
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </motion.div>
         )}
-      </Card>
-    </div>
+
+        {stage === 'qr' && qrData && (
+          <motion.div
+            key="qr"
+            variants={fadeIn}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            className="space-y-6"
+          >
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-white">Scan QR Code</h2>
+              <p className="text-sm text-white/70">
+                Open ZeroWallet and scan this code
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="p-4 bg-white rounded-xl shadow-xl">
+                <QRCodeSVG
+                  value={qrData}
+                  size={256}
+                  level="M"
+                  includeMargin={true}
+                />
+              </div>
+            </div>
+
+            <div className="text-center space-y-4">
+              <p className="text-sm text-white/70">
+                After scanning, approve the transaction in your wallet
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setStage('polling')}
+                className={`w-full ${customStyles.button}`}
+              >
+                I've Approved the Transaction
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {stage === 'polling' && (
+          <motion.div
+            key="polling"
+            variants={fadeIn}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            className="space-y-6 text-center"
+          >
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-white" />
+            <div>
+              <h2 className="text-2xl font-bold text-white">Verifying</h2>
+              <p className="text-sm text-white/70 mt-2">
+                Please wait while we confirm your transaction...
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {stage === 'onboarding' && walletAddress && (
+          <motion.div
+            key="onboarding"
+            variants={fadeIn}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+          >
+            <OnboardingForm
+              walletAddress={walletAddress}
+              onComplete={handleOnboardingComplete}
+              onBack={handleRetry}
+              theme={theme}
+              customStyles={customStyles}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-4 bg-red-500/10 rounded-lg"
+        >
+          <p className="text-sm text-red-400 text-center">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            onClick={handleRetry}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+        </motion.div>
+      )}
+    </Card>
   );
 }
