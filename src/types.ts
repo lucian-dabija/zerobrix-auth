@@ -1,31 +1,30 @@
-import type { NextRequest } from 'next/server';
+import { ReactNode } from 'react';
 
 export interface User {
   wallet_address: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
   email?: string;
   role: string;
-  created_at?: string;
+  created_at: string;
 }
 
 export interface NewUserData {
   wallet_address: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
   email?: string;
   role?: string;
 }
 
-export interface QRCodeConfig {
-  size?: number;
-  level?: 'L' | 'M' | 'Q' | 'H';
-  imageSettings?: {
-    src?: string;
-    height?: number;
-    width?: number;
-    excavate?: boolean;
-  };
+export interface UserDetails {
+  first_name: string;
+  last_name: string;
+  company_name: string;
+  email: string;
+  role: string;
 }
 
 export interface WalletAuthConfig {
@@ -47,32 +46,29 @@ export interface WalletAuthConfig {
     input?: string;
     select?: string;
   };
-  dbPath?: string;
-  qrCode?: QRCodeConfig;
+  redirectPath?: string;
+  refreshPageOnAuth?: boolean;
+  modalMode?: boolean;
   timeouts?: {
     authentication?: number;
     polling?: number;
   };
-  refreshPageOnAuth?: boolean;
+  onboardingFields?: {
+    allowCompany?: boolean;
+    requireName?: boolean;
+    requireEmail?: boolean;
+    requireRole?: boolean;
+    availableRoles?: string[];
+    companyNameRequired?: boolean;
+  };
+  encryptionKey?: string;
 }
 
 export interface WalletAuthHandlerConfig {
+  customValidation?: (walletAddress: string) => Promise<boolean>;
   validateUser?: (walletAddress: string) => Promise<User | null>;
   onNewUser?: (user: NewUserData) => Promise<void>;
-  customValidation?: (walletAddress: string) => Promise<boolean>;
   dbPath?: string;
-}
-
-export interface AuthResponse {
-  authenticated: boolean;
-  userAddress?: string;
-  user?: User;
-  error?: string;
-}
-
-export interface NonceResponse {
-  nonce: string;
-  error?: string;
 }
 
 export interface WalletAuthProps {
@@ -87,11 +83,34 @@ export interface ZeroBrixAuthProps {
   onError?: (error: Error) => void;
 }
 
-export interface UserDetails {
-  first_name: string;
-  last_name: string;
-  email: string;
-  role: string;
+export interface AuthProviderProps {
+  children: ReactNode;
+  config?: Partial<WalletAuthConfig>;
+  onAuthSuccess?: (user: User) => void;
+  onAuthError?: (error: Error) => void;
+}
+
+export interface AuthResponse {
+  authenticated: boolean;
+  userAddress?: string;
+  user?: User;
+  error?: string;
+}
+
+export interface NonceResponse {
+  nonce: string;
+  error?: string;
+}
+
+export interface QRCodeConfig {
+  size?: number;
+  level?: 'L' | 'M' | 'Q' | 'H';
+  imageSettings?: {
+    src?: string;
+    height?: number;
+    width?: number;
+    excavate?: boolean;
+  };
 }
 
 export interface DatabaseInterface {
@@ -102,3 +121,6 @@ export interface DatabaseInterface {
   deleteUser(walletAddress: string): Promise<boolean>;
   close(): Promise<void>;
 }
+
+export type AuthStage = 'intro' | 'qr' | 'polling' | 'onboarding';
+export type AccountType = 'individual' | 'company';

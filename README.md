@@ -1,406 +1,369 @@
 # @zerocat-software/zerobrix-auth
 
-A complete authentication solution for ZeroBrix wallet authentication with integrated SQLite storage.
+![ZEROCAT Banner](./assets/banner.png)
 
-![ZEROCAT Banner](./banner.png)
+A modern, secure, and easy-to-use authentication solution for Next.js applications using ZeroBrix wallet. Perfect for projects that need blockchain-based authentication without the complexity.
+
+[![npm version](https://img.shields.io/npm/v/@zerocat-software/zerobrix-auth.svg)](https://www.npmjs.com/package/@zerocat-software/zerobrix-auth)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
+## Why ZeroBrix Auth?
+
+ZeroBrix Auth brings enterprise-grade blockchain authentication to your Next.js application with minimal setup. While ZeroBrix Blockchain is our proprietary solution for secure transactions, this authentication library is fully open-source, allowing developers to:
+
+- ✅ Inspect and verify the security implementation
+- ✅ Contribute improvements and features
+- ✅ Customize the solution for specific needs
+- ✅ Trust the authentication process through transparency
+
+The open-source nature of this library, combined with ZeroBrix's secure blockchain infrastructure, provides the perfect balance of security and trustworthiness for modern web applications.
 
 ## Features
 
-- 🔐 ZeroBrix wallet authentication
-- 💾 Built-in SQLite user storage
-- ⚛️ Ready-to-use React components
-- 🎨 Tailwind CSS styling
-- 📱 Mobile-responsive design
-- 🔄 QR code & manual transaction support
-- 💫 Modern animations with Framer Motion
-- 🔄 Automatic page refresh support
-- 👤 Smooth new user onboarding
-- 🎯 Optimized polling behavior
+- 🎨 **Modern UI**: Sleek frosted glass design with smooth animations
+- 🔐 **Secure Authentication**: Blockchain-based with QR code scanning
+- 📱 **Mobile-First**: Optimized for ZeroWallet mobile app interaction
+- 🔄 **Flexible Onboarding**: Support for both individual and company accounts
+- 💾 **Built-in Database**: Encrypted JSON storage included
+- ⚡ **Next.js Ready**: Works seamlessly with App Router and Pages Router
+- 🎯 **Zero Config**: No complex setup required
+- 🎨 **Customizable**: Easy theming and styling options
+- 🌐 **TypeScript**: Full type safety and autocompletion
 
 ## Quick Start
 
 ### 1. Installation
 
 ```bash
-# Using pnpm (recommended)
-pnpm add @zerocat-software/zerobrix-auth
+# Using npm
+npm install @zerocat-software/zerobrix-auth
 
-# Install peer dependencies
-pnpm add @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select \
-        lucide-react framer-motion qrcode.react tailwindcss
+# Using yarn
+yarn add @zerocat-software/zerobrix-auth
+
+# Using pnpm
+pnpm add @zerocat-software/zerobrix-auth
 ```
 
 ### 2. Environment Setup
 
-Create or update your `.env.local`:
+Create or update your `.env.local` file:
 
 ```env
-# Required ZeroBrix configuration
+# ZeroBrix API Configuration
 ZEROBRIX_API_URL=https://brix.zerocat.one/api/v2
 ZEROBRIX_API_KEY=your_api_key
 AUTH_CONTRACT_ID=your_contract_id
+
+# Public Variables (Accessible in browser)
 NEXT_PUBLIC_SERVER_WALLET_ADDRESS=your_wallet_address
 NEXT_PUBLIC_ZEROCOIN_TOKEN_ID=your_token_id
+
+# Optional: Custom encryption key for database
+DB_ENCRYPTION_KEY=your_random_32_byte_hex_string
 ```
 
-### 3. API Route Setup
+### 3. Add the Provider
 
-Create `app/api/wallet-auth/route.ts`:
+In your app's root layout (`app/layout.tsx`):
 
-```typescript
-import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
+```tsx
+import { AuthProvider } from '@zerocat-software/zerobrix-auth';
 
-export const dynamic = 'force-dynamic';
-
-export const { GET, POST } = createWalletAuthHandler({
-  // Optional: Custom database path
-  dbPath: './data/users.db',
-  
-  // Optional: Custom validation
-  customValidation: async (walletAddress: string) => {
-    // Add your custom validation logic here
-    return true;
-  }
-});
-```
-
-### 4. Authentication Component Setup
-
-Create your authentication page (`app/auth/page.tsx`):
-
-```typescript
-'use client';
-
-import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
-import type { User } from '@zerocat-software/zerobrix-auth';
-import { useRouter } from 'next/navigation';
-
-export default function AuthPage() {
-  const router = useRouter();
-
-  const handleAuthenticated = (user: User) => {
-    localStorage.setItem('wallet_address', user.wallet_address);
-    router.push('/dashboard');
-  };
-
+export default function RootLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <WalletAuth 
-      onAuthenticated={handleAuthenticated}
-      config={{
-        appName: "Your App Name",
-        appDescription: "Secure authentication with ZeroBrix",
-        refreshPageOnAuth: true, // Enable automatic page refresh
-        theme: {
-          primary: "blue",
-          secondary: "teal"
-        },
-        timeouts: {
-          authentication: 300000, // 5 minutes
-          polling: 3000        // 3 seconds
-        }
-      }}
-      onError={(error) => {
-        console.error('Auth error:', error);
-      }}
-    />
+    <html>
+      <body>
+        <AuthProvider
+          config={{
+            appName: "My Amazing App",
+            appDescription: "Secure login with ZeroWallet",
+            theme: {
+              primary: "blue",
+              secondary: "teal"
+            }
+          }}
+        >
+          {children}
+        </AuthProvider>
+      </body>
+    </html>
   );
 }
 ```
 
-### 5. Tailwind Configuration
+### 4. Protect Your Routes
 
-Update your `tailwind.config.js`:
+Simply wrap any component that needs authentication:
 
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
-  ],
-  theme: {
-    extend: {}
-  },
-  plugins: []
-};
-```
+```tsx
+'use client';
 
-## Configuration Options
+import { withAuth, useAuth } from '@zerocat-software/zerobrix-auth';
 
-### WalletAuth Component
-
-```typescript
-interface WalletAuthConfig {
-  // Basic Configuration
-  appName: string;
-  appDescription: string;
+function DashboardPage() {
+  const { user } = useAuth();
   
-  // Theme Configuration
-  theme?: {
-    primary: string;    // Tailwind color name
-    secondary: string;  // Tailwind color name
-  };
-  
-  // Logo Configuration (optional)
-  logo?: {
-    src: string;
-    width: number;
-    height: number;
-  };
-  
-  // Custom Styling
-  customStyles?: {
-    container?: string;  // Container class names
-    card?: string;      // Card class names
-    button?: string;    // Button class names
-    input?: string;     // Input field class names
-    select?: string;    // Select dropdown class names
-  };
-  
-  // Behavior Configuration
-  refreshPageOnAuth?: boolean;  // Auto refresh after auth
-  timeouts?: {
-    authentication?: number;  // Overall timeout (ms)
-    polling?: number;        // Polling interval (ms)
-  };
-  
-  // QR Code Configuration
-  qrCode?: {
-    size?: number;
-    level?: 'L' | 'M' | 'Q' | 'H';
-    imageSettings?: {
-      src?: string;
-      height?: number;
-      width?: number;
-      excavate?: boolean;
-    };
-  };
+  return (
+    <div>
+      <h1>Welcome, {user?.first_name || user?.company_name}!</h1>
+      <p>Your wallet: {user?.wallet_address}</p>
+    </div>
+  );
 }
+
+// This adds authentication protection
+export default withAuth(DashboardPage);
 ```
 
-### Server Handler Configuration
+That's it! The library handles everything else automatically.
 
-```typescript
-interface WalletAuthHandlerConfig {
-  // Custom user validation
-  validateUser?: (walletAddress: string) => Promise<User | null>;
+## How It Works
+
+Let's break down the authentication flow:
+
+### 1. Initial State
+When a user visits a protected page, the library checks for existing authentication. If none is found, it automatically shows the auth modal.
+
+### 2. QR Code Generation
+```tsx
+// This happens automatically, but here's what's going on:
+const qrData = await fetch('/api/auth').then(r => r.json());
+```
+- A unique nonce is generated
+- QR code is created with transaction details
+- User sees the QR code in the modal
+
+### 3. Authentication Flow
+
+                                  ┌──────────────┐
+                                  │  Protected   │
+                                  │    Page      │
+                                  └──────┬───────┘
+                                         │
+                                         ▼
+                                  ┌──────────────┐
+                                  │ Auth Modal   │
+                                  │   Opens      │
+                                  └──────┬───────┘
+                                         │
+                                         ▼
+                           ┌─────────────────────────┐
+                           │    Generate QR Code     │
+                           │ with Nonce & Tx Details │
+                           └──────────┬──────────────┘
+                                     │
+                                     ▼
+┌─────────────┐            ┌──────────────┐
+│  ZeroWallet │◄───Scan────│   Display    │
+│    App      │            │   QR Code    │
+└──────┬──────┘            └──────────────┘
+       │
+       ▼
+┌─────────────┐
+│   Approve   │
+│ Transaction │
+└──────┬──────┘
+       │                   ┌──────────────┐         ┌──────────────┐
+       │                   │  User Found  │    Yes  │    Login     │
+       └──────►Backend─────►  in Database ├─────────►   Complete   │
+               Verifies    └──────┬───────┘         └──────────────┘
+                                 │
+                                 │ No
+                                 ▼
+                          ┌──────────────┐         ┌──────────────┐
+                          │  Onboarding  │         │    Login     │
+                          │     Form     ├─────────►   Complete   │
+                          └──────────────┘         └──────────────┘
+
+### 4. User Management
+The library includes an encrypted JSON database that automatically handles:
+- User creation
+- Profile updates
+- Secure storage
+- Data encryption
+
+Example of accessing user data:
+```tsx
+function ProfilePage() {
+  const { user, logout } = useAuth();
   
-  // New user callback
-  onNewUser?: (user: NewUserData) => Promise<void>;
-  
-  // Custom validation logic
-  customValidation?: (walletAddress: string) => Promise<boolean>;
-  
-  // Database configuration
-  dbPath?: string;
+  return (
+    <div>
+      <h2>Profile</h2>
+      {user?.company_name ? (
+        // Company Profile
+        <div>
+          <p>Company: {user.company_name}</p>
+          <p>Role: {user.role}</p>
+        </div>
+      ) : (
+        // Individual Profile
+        <div>
+          <p>Name: {user.first_name} {user.last_name}</p>
+          <p>Email: {user.email}</p>
+        </div>
+      )}
+      <button onClick={logout}>Logout</button>
+    </div>
+  );
 }
+
+export default withAuth(ProfilePage);
 ```
 
-## Database Operations
+## Advanced Configuration
 
-### Basic CRUD Operations
+### Custom Styling
 
-```typescript
-import { db } from '@zerocat-software/zerobrix-auth/server';
+You can customize the appearance:
 
-// Find a user
-const user = await db.findUser(walletAddress);
-
-// Create a user
-const newUser = await db.createUser({
-  wallet_address: '0x...',
-  first_name: 'John',
-  last_name: 'Doe',
-  email: 'john@example.com',
-  role: 'User'
-});
-
-// Update a user
-const updatedUser = await db.updateUser(walletAddress, {
-  email: 'new-email@example.com'
-});
-
-// Delete a user
-const deleted = await db.deleteUser(walletAddress);
-```
-
-### Custom Database Instance
-
-```typescript
-import { SQLiteDatabase } from '@zerocat-software/zerobrix-auth/server';
-
-const customDb = SQLiteDatabase.getInstance('./custom/path/users.db');
-await customDb.initialize();
-
-// Use custom instance
-const user = await customDb.findUser(walletAddress);
-```
-
-## Advanced Features
-
-### 1. New User Onboarding
-
-The library provides a smooth onboarding experience for new users:
-
-- Automatic detection of new users
-- Form-based data collection
-- Optimized polling behavior during registration
-- Seamless transition to authenticated state
-
-### 2. Authentication Flow
-
-1. **Initial QR Code Generation**
-   - Secure nonce generation
-   - QR code display with custom logo
-   - Mobile-friendly scanning
-
-2. **Transaction Verification**
-   - Smart contract interaction
-   - Automatic polling with configurable intervals
-   - Error handling and retry mechanisms
-
-3. **User Management**
-   - Automatic user creation for new wallets
-   - Role-based access control
-   - Optional email collection
-
-### 3. Page Refresh Behavior
-
-Control page refresh behavior after authentication:
-
-```typescript
-<WalletAuth 
+```tsx
+<AuthProvider
   config={{
-    refreshPageOnAuth: true,  // Enable auto-refresh
-    timeouts: {
-      authentication: 300000, // 5 minutes
-      polling: 3000          // 3 seconds
+    // Color theme
+    theme: {
+      primary: "indigo",
+      secondary: "purple"
+    },
+    
+    // Custom styles
+    customStyles: {
+      card: "shadow-2xl border-white/10",
+      button: "hover:scale-105 transition-all",
+      input: "focus:ring-2 focus:ring-purple-500"
+    },
+    
+    // Custom logo
+    logo: {
+      src: "/your-logo.png",
+      width: 120,
+      height: 40
     }
   }}
-/>
+>
 ```
 
-### 4. Protected Routes
+### Onboarding Options
 
-Implement route protection with middleware:
+Configure the user registration flow:
 
-```typescript
-// middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export async function middleware(request: NextRequest) {
-  const walletAddress = request.cookies.get('wallet_address')?.value;
-
-  if (!walletAddress) {
-    return NextResponse.redirect(new URL('/auth', request.url));
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ['/dashboard/:path*', '/profile/:path*']
-};
-```
-
-## Styling and Customization
-
-### 1. Theme Customization
-
-```typescript
-const config = {
-  theme: {
-    primary: "blue",     // Any Tailwind color
-    secondary: "teal"    // Any Tailwind color
-  }
-};
-```
-
-### 2. Custom Styles
-
-```typescript
-const config = {
-  customStyles: {
-    container: "bg-gradient-custom min-h-screen",
-    card: "backdrop-blur-lg bg-white/90",
-    button: "bg-gradient-to-r from-primary to-secondary",
-    input: "border-gray-300",
-    select: "border-gray-300"
-  }
-};
-```
-
-### 3. QR Code Customization
-
-```typescript
-const config = {
-  qrCode: {
-    size: 256,
-    level: "M",
-    imageSettings: {
-      src: "/logo.png",
-      height: 40,
-      width: 40,
-      excavate: true
+```tsx
+<AuthProvider
+  config={{
+    onboardingFields: {
+      // Allow company registration
+      allowCompany: true,
+      
+      // Make fields required
+      requireName: true,
+      requireEmail: true,
+      
+      // Custom roles
+      availableRoles: [
+        "User",
+        "Admin",
+        "Developer",
+        "Manager"
+      ]
     }
-  }
-};
+  }}
+>
 ```
+
+### Custom Validation
+
+Add custom validation logic:
+
+```tsx
+// app/api/auth/route.ts
+import { createAuthApiHandler } from '@zerocat-software/zerobrix-auth';
+
+export const { GET, POST } = createAuthApiHandler({
+  async customValidation(walletAddress: string) {
+    // Example: Check if wallet is whitelisted
+    const whitelist = ['0x123...', '0x456...'];
+    return whitelist.includes(walletAddress);
+  }
+});
+```
+
+## Security Considerations
+
+### Database Encryption
+The JSON database is automatically encrypted using AES-256-GCM:
+- Encryption key is securely generated during installation
+- Data is encrypted at rest
+- Each write operation uses a new IV
+- Authentication tags prevent tampering
+
+### Authentication Flow Security
+- Nonces are single-use and time-limited
+- All API routes are rate-limited
+- Wallet addresses are verified on-chain
+- User data is encrypted in transit and at rest
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **SQLite Binary Missing**
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install build-essential python3
+1. "Modal not showing on protected page"
+```tsx
+// Make sure you've wrapped the page with withAuth
+export default withAuth(YourPage);
 
-   # macOS
-   xcode-select --install
+// And added 'use client' directive
+'use client';
+import { withAuth } from '@zerocat-software/zerobrix-auth';
+```
 
-   # Windows
-   npm install --global windows-build-tools
-   ```
+2. "Styling not working"
+```js
+// Add to tailwind.config.js
+module.exports = {
+  content: [
+    // ... other paths
+    "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
+  ]
+}
+```
 
-2. **Authentication Timeout**
-   - Increase timeout values in config
-   - Check network connectivity
-   - Verify environment variables
-
-3. **Database Permissions**
-   - Ensure write permissions on data directory
-   - Check file ownership
-   - Verify path configuration
-
-### Best Practices
-
-1. **Security**
-   - Always use HTTPS in production
-   - Implement proper role validation
-   - Secure environment variables
-
-2. **Performance**
-   - Optimize polling intervals
-   - Use appropriate timeout values
-   - Enable page caching where appropriate
-
-3. **User Experience**
-   - Provide clear error messages
-   - Show loading states
-   - Implement proper validation feedback
+3. "Database errors"
+```bash
+# Ensure data directory exists and is writable
+mkdir -p data
+chmod 755 data
+```
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to our GitHub repository.
+We welcome contributions! This library is open source to foster community involvement and trust. While ZeroBrix Blockchain itself is proprietary, we believe in transparent authentication implementations.
 
-## License
-
-BSD-3-Clause © ZEROCAT
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## Support
 
-- Issues: [GitHub Issues](https://github.com/lucian-dabija/zerobrix-auth/issues)
-- Email: contact@zerocat.art
+- 📚 [Documentation](https://docs.zerocat.one/auth)
+- 💬 [Discord Community](https://discord.gg/zerocat)
+- 🐛 [Issue Tracker](https://github.com/zerocat-software/zerobrix-auth/issues)
+- 📧 [Email Support](mailto:support@zerocat.one)
+
+## License
+
+Licensed under the BSD-3-Clause License. See [LICENSE](./LICENSE) for more information.
+
+---
+
+<div align="center">
+Made with ❤️ by ZEROCAT
+
+[zerocat.one](https://www.zerocat.art) • [LinkedIn](https://linkedin.com/company/zerocat) • [Blog](https://www.zerocat.one/journal)
+</div>

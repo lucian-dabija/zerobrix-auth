@@ -1,9 +1,15 @@
-import { WalletAuth } from './components/WalletAuth';
-import { ZeroBrixAuth } from './components/ZeroBrixAuth';
-import * as utils from './utils';
+export {
+  AuthProvider,
+  useAuth,
+  withAuth
+} from './components/AuthProvider';
 
 export {
-  WalletAuth,
-  ZeroBrixAuth,
-  utils
-};
+  ZeroBrixAuth
+} from './components/ZeroBrixAuth';
+
+export {
+  OnboardingForm
+} from './components/OnboardingForm';
+
+export * from './utils';

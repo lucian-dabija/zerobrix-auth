@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -11,7 +10,7 @@ export function isValidWalletAddress(address: string): boolean {
 }
 
 export function createGradient(from: string, to: string): string {
-  return `bg-gradient-to-r from-${from}-600 to-${to}-600`;
+  return `bg-gradient-to-r from-${from}-400 via-${from}-500 to-${to}-600`;
 }
 
 export function formatErrorMessage(error: unknown): string {
@@ -24,17 +23,22 @@ export function formatErrorMessage(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
-export function createThemeColors(primary: string, secondary: string) {
-  return {
-    primary: {
-      light: `${primary}-50`,
-      main: `${primary}-600`,
-      dark: `${primary}-950`,
-    },
-    secondary: {
-      light: `${secondary}-50`,
-      main: `${secondary}-600`,
-      dark: `${secondary}-950`,
-    }
-  };
+export function getRandomNonce(): string {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
 }
+
+export function formatWalletAddress(address: string): string {
+  if (!address) return '';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+export const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.2 } }
+};
+
+export const slideUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};

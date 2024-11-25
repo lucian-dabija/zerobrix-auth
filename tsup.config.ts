@@ -16,11 +16,11 @@ export default defineConfig({
     '@radix-ui/react-dialog',
     '@radix-ui/react-label',
     '@radix-ui/react-select',
+    '@radix-ui/react-tabs',
     'lucide-react',
     'framer-motion',
     'qrcode.react',
-    'tailwindcss',
-    'better-sqlite3'
+    'tailwindcss'
   ],
   sourcemap: true,
 });

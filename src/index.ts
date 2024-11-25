@@ -1,15 +1,15 @@
+export {
+  AuthProvider,
+  useAuth,
+  withAuth
+} from './react/components/AuthProvider';
+
 export type {
-    User,
-    NewUserData,
-    WalletAuthConfig,
-    WalletAuthHandlerConfig,
-    AuthResponse,
-    NonceResponse,
-    WalletAuthProps,
-    ZeroBrixAuthProps,
-    UserDetails,
-    DatabaseInterface
-  } from './types';
-  
-  export * from './react';
-  export * from './server';
+  User,
+  UserDetails,
+  WalletAuthConfig,
+  AuthResponse,
+  AuthProviderProps,
+  WalletAuthProps,
+  ZeroBrixAuthProps
+} from './types';
