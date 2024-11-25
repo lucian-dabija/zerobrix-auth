@@ -8,29 +8,28 @@ function ensureDirectoryExists(dirPath) {
 }
 
 function setupDataDirectory() {
-  // Create data directory in project root if it doesn't exist
   const dataDir = path.join(process.cwd(), 'data');
   ensureDirectoryExists(dataDir);
   
-  // Create an empty .gitkeep file to ensure the directory is tracked
   const gitkeepPath = path.join(dataDir, '.gitkeep');
   if (!fs.existsSync(gitkeepPath)) {
     fs.writeFileSync(gitkeepPath, '');
   }
 
-  // Add .gitignore for SQLite files if it doesn't exist
   const gitignorePath = path.join(dataDir, '.gitignore');
   if (!fs.existsSync(gitignorePath)) {
     fs.writeFileSync(gitignorePath, `
-# SQLite database files
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
+# Database files
+*.json
 
 # Keep .gitkeep
 !.gitkeep
 `);
+  }
+
+  const dbPath = path.join(dataDir, 'zerobrix-users.json');
+  if (!fs.existsSync(dbPath)) {
+    fs.writeFileSync(dbPath, JSON.stringify({ users: [] }, null, 2));
   }
 }
 
@@ -38,7 +37,7 @@ function init() {
   try {
     setupDataDirectory();
     console.log('✅ ZeroBrix Auth: Data directory initialized');
-    console.log('✅ ZeroBrix Auth: SQLite configuration complete');
+    console.log('✅ ZeroBrix Auth: JSON database configured');
   } catch (error) {
     console.error('Error during post-install setup:', error);
     process.exit(1);
