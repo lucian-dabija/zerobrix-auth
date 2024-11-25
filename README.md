@@ -139,46 +139,17 @@ const qrData = await fetch('/api/auth').then(r => r.json());
 - User sees the QR code in the modal
 
 ### 3. Authentication Flow
-
-                                  ┌──────────────┐
-                                  │  Protected   │
-                                  │    Page      │
-                                  └──────┬───────┘
-                                         │
-                                         ▼
-                                  ┌──────────────┐
-                                  │ Auth Modal   │
-                                  │   Opens      │
-                                  └──────┬───────┘
-                                         │
-                                         ▼
-                           ┌─────────────────────────┐
-                           │    Generate QR Code     │
-                           │ with Nonce & Tx Details │
-                           └──────────┬──────────────┘
-                                     │
-                                     ▼
-┌─────────────┐            ┌──────────────┐
-│  ZeroWallet │◄───Scan────│   Display    │
-│    App      │            │   QR Code    │
-└──────┬──────┘            └──────────────┘
-       │
-       ▼
-┌─────────────┐
-│   Approve   │
-│ Transaction │
-└──────┬──────┘
-       │                   ┌──────────────┐         ┌──────────────┐
-       │                   │  User Found  │    Yes  │    Login     │
-       └──────►Backend─────►  in Database ├─────────►   Complete   │
-               Verifies    └──────┬───────┘         └──────────────┘
-                                 │
-                                 │ No
-                                 ▼
-                          ┌──────────────┐         ┌──────────────┐
-                          │  Onboarding  │         │    Login     │
-                          │     Form     ├─────────►   Complete   │
-                          └──────────────┘         └──────────────┘
+```mermaid
+graph TD
+    A[User Scans QR] --> B[Opens ZeroWallet]
+    B --> C[Approves Transaction]
+    C --> D[Backend Verifies]
+    D --> E{User Exists?}
+    E -->|Yes| F[Login Complete]
+    E -->|No| G[Show Onboarding]
+    G --> H[Create Profile]
+    H --> F
+```
 
 ### 4. User Management
 The library includes an encrypted JSON database that automatically handles:
