@@ -1,7 +1,7 @@
 import { createWalletAuthHandler } from './handlers/wallet-auth';
-import { SQLiteDatabase } from './db/sqlite';
+import { JSONDatabase } from './db';
 import { db } from './db';
 export type { DatabaseInterface } from './db/interface';
-export { SQLiteDatabase };
+export { JSONDatabase };
 export { db };
 export { createWalletAuthHandler };

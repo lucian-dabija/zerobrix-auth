@@ -1,10 +1,7 @@
-import { SQLiteDatabase } from './sqlite';
+import { JSONDatabase } from './json';
 import type { DatabaseInterface } from './interface';
 
 export type { DatabaseInterface };
-
-export { SQLiteDatabase };
-
-export const db = SQLiteDatabase.getInstance();
-
+export { JSONDatabase };
+export const db = JSONDatabase.getInstance();
 export default db;

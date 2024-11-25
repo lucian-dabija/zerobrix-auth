@@ -1,7 +1,7 @@
 {
   "name": "@zerocat-software/zerobrix-auth",
-  "version": "1.0.7",
-  "description": "Authentication library for ZeroBrix Blockchain-based applications with integrated SQLite user storage",
+  "version": "1.0.8",
+  "description": "Authentication library for ZeroBrix Blockchain-based applications with integrated JSON database",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "scripts": {
@@ -55,7 +55,7 @@
     "sqlite"
   ],
   "author": "ZEROCAT",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "peerDependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

@@ -1,41 +1,42 @@
 # @zerocat-software/zerobrix-auth
 
-A complete authentication solution for ZeroBrix wallet authentication with integrated SQLite storage.
+A simple and reliable authentication solution for Next.js applications using ZeroBrix wallet. Perfect for projects that need secure, blockchain-based authentication without the complexity.
 
 ![ZEROCAT Banner](./banner.png)
 
-## Features
+## What is This Library?
 
-- 🔐 ZeroBrix wallet authentication
-- 💾 Built-in SQLite user storage
-- ⚛️ Ready-to-use React components
-- 🎨 Tailwind CSS styling
-- 📱 Mobile-responsive design
-- 🔄 QR code & manual transaction support
-- 💫 Modern animations with Framer Motion
-- 🔄 Automatic page refresh support
-- 👤 Smooth new user onboarding
-- 🎯 Optimized polling behavior
+This library helps you add ZeroBrix wallet authentication to your Next.js website. Users can scan a QR code with their ZeroWallet app to log in, and their information is stored locally in a JSON file - no complex database setup needed!
 
-## Quick Start
+## Features At a Glance
 
-### 1. Installation
+- 📱 Login with QR code scan
+- 👤 User profile management
+- ⚡ Works with Next.js 13+ and App Router
+- 🎨 Pre-built UI components with Tailwind CSS
+- 🔄 Automatic page refresh after login
+- 💾 Simple JSON file storage (no database needed!)
+
+## Step-by-Step Setup Guide
+
+### 1. Install the Package
+
+First, install the library and its required dependencies:
 
 ```bash
-# Using pnpm (recommended)
-pnpm add @zerocat-software/zerobrix-auth
+# Using npm
+npm install @zerocat-software/zerobrix-auth @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select lucide-react framer-motion qrcode.react
 
-# Install peer dependencies
-pnpm add @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select \
-        lucide-react framer-motion qrcode.react tailwindcss
+# Or using pnpm
+pnpm add @zerocat-software/zerobrix-auth @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select lucide-react framer-motion qrcode.react
 ```
 
-### 2. Environment Setup
+### 2. Set Up Environment Variables
 
-Create or update your `.env.local`:
+Create or update your `.env.local` file with your ZeroBrix credentials:
 
 ```env
-# Required ZeroBrix configuration
+# Required settings - you'll get these from ZeroBrix
 ZEROBRIX_API_URL=https://brix.zerocat.one/api/v2
 ZEROBRIX_API_KEY=your_api_key
 AUTH_CONTRACT_ID=your_contract_id
@@ -43,30 +44,29 @@ NEXT_PUBLIC_SERVER_WALLET_ADDRESS=your_wallet_address
 NEXT_PUBLIC_ZEROCOIN_TOKEN_ID=your_token_id
 ```
 
-### 3. API Route Setup
+### 3. Create the Authentication API Route
 
-Create `app/api/wallet-auth/route.ts`:
+Create a new file at `app/api/wallet-auth/route.ts`:
 
 ```typescript
 import { createWalletAuthHandler } from '@zerocat-software/zerobrix-auth/server';
 
+// This line is important for Next.js!
 export const dynamic = 'force-dynamic';
 
+// Create and export the API route handlers
 export const { GET, POST } = createWalletAuthHandler({
-  // Optional: Custom database path
-  dbPath: './data/users.db',
-  
-  // Optional: Custom validation
+  // Optional: Add custom validation if needed
   customValidation: async (walletAddress: string) => {
-    // Add your custom validation logic here
-    return true;
+    // For example, check if the wallet is whitelisted
+    return true; // Allow all wallets by default
   }
 });
 ```
 
-### 4. Authentication Component Setup
+### 4. Create Your Login Page
 
-Create your authentication page (`app/auth/page.tsx`):
+Create a new file at `app/auth/page.tsx`:
 
 ```typescript
 'use client';
@@ -75,11 +75,15 @@ import { WalletAuth } from '@zerocat-software/zerobrix-auth/react';
 import type { User } from '@zerocat-software/zerobrix-auth';
 import { useRouter } from 'next/navigation';
 
-export default function AuthPage() {
+export default function LoginPage() {
   const router = useRouter();
 
+  // This function runs after successful authentication
   const handleAuthenticated = (user: User) => {
+    // Save the wallet address for later use
     localStorage.setItem('wallet_address', user.wallet_address);
+    
+    // Redirect to dashboard or home page
     router.push('/dashboard');
   };
 
@@ -87,29 +91,38 @@ export default function AuthPage() {
     <WalletAuth 
       onAuthenticated={handleAuthenticated}
       config={{
-        appName: "Your App Name",
-        appDescription: "Secure authentication with ZeroBrix",
-        refreshPageOnAuth: true, // Enable automatic page refresh
+        // Your app's information
+        appName: "My Amazing App",
+        appDescription: "Login with ZeroWallet",
+        
+        // Enable automatic page refresh after login
+        refreshPageOnAuth: true,
+        
+        // Choose your colors (uses Tailwind CSS colors)
         theme: {
           primary: "blue",
           secondary: "teal"
         },
+
+        // How long to wait for authentication
         timeouts: {
-          authentication: 300000, // 5 minutes
-          polling: 3000        // 3 seconds
+          authentication: 300000, // 5 minutes total
+          polling: 3000          // Check every 3 seconds
         }
       }}
+      // Handle any errors that occur
       onError={(error) => {
-        console.error('Auth error:', error);
+        console.error('Login error:', error);
+        alert('Login failed. Please try again.');
       }}
     />
   );
 }
 ```
 
-### 5. Tailwind Configuration
+### 5. Update Tailwind Config
 
-Update your `tailwind.config.js`:
+Add the library's components to your Tailwind configuration (`tailwind.config.js`):
 
 ```javascript
 /** @type {import('tailwindcss').Config} */
@@ -117,6 +130,7 @@ module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
+    // Add this line to include the library's components:
     "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
@@ -126,164 +140,58 @@ module.exports = {
 };
 ```
 
-## Configuration Options
+## Working with User Data
 
-### WalletAuth Component
+All user data is stored in a simple JSON file. Here's how to work with it:
 
-```typescript
-interface WalletAuthConfig {
-  // Basic Configuration
-  appName: string;
-  appDescription: string;
-  
-  // Theme Configuration
-  theme?: {
-    primary: string;    // Tailwind color name
-    secondary: string;  // Tailwind color name
-  };
-  
-  // Logo Configuration (optional)
-  logo?: {
-    src: string;
-    width: number;
-    height: number;
-  };
-  
-  // Custom Styling
-  customStyles?: {
-    container?: string;  // Container class names
-    card?: string;      // Card class names
-    button?: string;    // Button class names
-    input?: string;     // Input field class names
-    select?: string;    // Select dropdown class names
-  };
-  
-  // Behavior Configuration
-  refreshPageOnAuth?: boolean;  // Auto refresh after auth
-  timeouts?: {
-    authentication?: number;  // Overall timeout (ms)
-    polling?: number;        // Polling interval (ms)
-  };
-  
-  // QR Code Configuration
-  qrCode?: {
-    size?: number;
-    level?: 'L' | 'M' | 'Q' | 'H';
-    imageSettings?: {
-      src?: string;
-      height?: number;
-      width?: number;
-      excavate?: boolean;
-    };
-  };
-}
-```
-
-### Server Handler Configuration
-
-```typescript
-interface WalletAuthHandlerConfig {
-  // Custom user validation
-  validateUser?: (walletAddress: string) => Promise<User | null>;
-  
-  // New user callback
-  onNewUser?: (user: NewUserData) => Promise<void>;
-  
-  // Custom validation logic
-  customValidation?: (walletAddress: string) => Promise<boolean>;
-  
-  // Database configuration
-  dbPath?: string;
-}
-```
-
-## Database Operations
-
-### Basic CRUD Operations
+### Finding a User
 
 ```typescript
 import { db } from '@zerocat-software/zerobrix-auth/server';
 
-// Find a user
-const user = await db.findUser(walletAddress);
-
-// Create a user
-const newUser = await db.createUser({
-  wallet_address: '0x...',
-  first_name: 'John',
-  last_name: 'Doe',
-  email: 'john@example.com',
-  role: 'User'
-});
-
-// Update a user
-const updatedUser = await db.updateUser(walletAddress, {
-  email: 'new-email@example.com'
-});
-
-// Delete a user
-const deleted = await db.deleteUser(walletAddress);
+// In your API route or server component:
+async function getUser(walletAddress: string) {
+  const user = await db.findUser(walletAddress);
+  if (user) {
+    console.log('Found user:', user.first_name, user.last_name);
+  }
+  return user;
+}
 ```
 
-### Custom Database Instance
+### Creating a New User
 
 ```typescript
-import { SQLiteDatabase } from '@zerocat-software/zerobrix-auth/server';
-
-const customDb = SQLiteDatabase.getInstance('./custom/path/users.db');
-await customDb.initialize();
-
-// Use custom instance
-const user = await customDb.findUser(walletAddress);
+async function createNewUser() {
+  const newUser = await db.createUser({
+    wallet_address: '0x123...',
+    first_name: 'John',
+    last_name: 'Doe',
+    email: 'john@example.com',
+    role: 'User'  // or 'Admin'
+  });
+  
+  console.log('Created new user:', newUser);
+}
 ```
 
-## Advanced Features
-
-### 1. New User Onboarding
-
-The library provides a smooth onboarding experience for new users:
-
-- Automatic detection of new users
-- Form-based data collection
-- Optimized polling behavior during registration
-- Seamless transition to authenticated state
-
-### 2. Authentication Flow
-
-1. **Initial QR Code Generation**
-   - Secure nonce generation
-   - QR code display with custom logo
-   - Mobile-friendly scanning
-
-2. **Transaction Verification**
-   - Smart contract interaction
-   - Automatic polling with configurable intervals
-   - Error handling and retry mechanisms
-
-3. **User Management**
-   - Automatic user creation for new wallets
-   - Role-based access control
-   - Optional email collection
-
-### 3. Page Refresh Behavior
-
-Control page refresh behavior after authentication:
+### Updating User Details
 
 ```typescript
-<WalletAuth 
-  config={{
-    refreshPageOnAuth: true,  // Enable auto-refresh
-    timeouts: {
-      authentication: 300000, // 5 minutes
-      polling: 3000          // 3 seconds
-    }
-  }}
-/>
+async function updateUserEmail(walletAddress: string, newEmail: string) {
+  const updated = await db.updateUser(walletAddress, {
+    email: newEmail
+  });
+  
+  if (updated) {
+    console.log('Updated user email');
+  }
+}
 ```
 
-### 4. Protected Routes
+## Protecting Your Pages
 
-Implement route protection with middleware:
+To make sure only logged-in users can access certain pages, create a middleware file:
 
 ```typescript
 // middleware.ts
@@ -291,116 +199,111 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // Check if user is logged in
   const walletAddress = request.cookies.get('wallet_address')?.value;
 
   if (!walletAddress) {
+    // Not logged in? Redirect to login page
     return NextResponse.redirect(new URL('/auth', request.url));
   }
 
+  // Logged in? Continue to page
   return NextResponse.next();
 }
 
+// Which pages should be protected?
 export const config = {
-  matcher: ['/dashboard/:path*', '/profile/:path*']
+  matcher: [
+    '/dashboard/:path*',
+    '/profile/:path*',
+    // Add more protected routes here
+  ]
 };
 ```
 
-## Styling and Customization
+## Customizing the Look and Feel
 
-### 1. Theme Customization
+### Colors and Theme
 
 ```typescript
 const config = {
   theme: {
-    primary: "blue",     // Any Tailwind color
-    secondary: "teal"    // Any Tailwind color
+    primary: "indigo",    // Main color
+    secondary: "purple"   // Accent color
   }
 };
 ```
 
-### 2. Custom Styles
+You can use any Tailwind CSS color name like: red, blue, green, yellow, purple, pink, etc.
+
+### Custom Styles
 
 ```typescript
 const config = {
   customStyles: {
-    container: "bg-gradient-custom min-h-screen",
-    card: "backdrop-blur-lg bg-white/90",
-    button: "bg-gradient-to-r from-primary to-secondary",
-    input: "border-gray-300",
-    select: "border-gray-300"
+    // Add extra classes to each element
+    container: "bg-gradient-to-r from-slate-900 to-slate-800",
+    card: "shadow-xl border border-gray-800",
+    button: "hover:scale-105 transition-transform",
+    input: "focus:ring-2 focus:ring-purple-500",
+    select: "cursor-pointer hover:border-purple-500"
   }
 };
 ```
 
-### 3. QR Code Customization
+### QR Code Appearance
 
 ```typescript
 const config = {
   qrCode: {
-    size: 256,
-    level: "M",
+    size: 256,              // Size in pixels
+    level: "M",            // Error correction level
     imageSettings: {
-      src: "/logo.png",
+      src: "/your-logo.png", // Add your logo in the center
       height: 40,
       width: 40,
-      excavate: true
+      excavate: true      // Clear space for logo
     }
   }
 };
 ```
 
-## Troubleshooting
+## Common Issues and Solutions
 
-### Common Issues
+### 1. "Component not found" Error
+Make sure you've installed all peer dependencies:
+```bash
+npm install @radix-ui/react-dialog @radix-ui/react-label @radix-ui/react-select lucide-react framer-motion qrcode.react
+```
 
-1. **SQLite Binary Missing**
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install build-essential python3
+### 2. Styling Issues
+If Tailwind styles aren't working, check your `tailwind.config.js` includes the library's path:
+```javascript
+content: [
+  "./node_modules/@zerocat-software/zerobrix-auth/**/*.{js,ts,jsx,tsx}"
+]
+```
 
-   # macOS
-   xcode-select --install
+### 3. Data Storage Issues
+Make sure your `data` directory exists and has write permissions:
+```bash
+# Create data directory
+mkdir data
 
-   # Windows
-   npm install --global windows-build-tools
-   ```
+# Set permissions (Linux/Mac)
+chmod 755 data
+```
 
-2. **Authentication Timeout**
-   - Increase timeout values in config
-   - Check network connectivity
-   - Verify environment variables
+## Need Help?
 
-3. **Database Permissions**
-   - Ensure write permissions on data directory
-   - Check file ownership
-   - Verify path configuration
-
-### Best Practices
-
-1. **Security**
-   - Always use HTTPS in production
-   - Implement proper role validation
-   - Secure environment variables
-
-2. **Performance**
-   - Optimize polling intervals
-   - Use appropriate timeout values
-   - Enable page caching where appropriate
-
-3. **User Experience**
-   - Provide clear error messages
-   - Show loading states
-   - Implement proper validation feedback
-
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to our GitHub repository.
+- 🐛 Found a bug? [Open an issue](https://github.com/lucian-dabija/zerobrix-auth/issues)
+- 📧 Need support? Email us at contact@zerocat.art
+- 🚀 Want to contribute? PRs are welcome!
 
 ## License
 
 BSD-3-Clause © ZEROCAT
 
-## Support
+---
 
-- Issues: [GitHub Issues](https://github.com/lucian-dabija/zerobrix-auth/issues)
-- Email: contact@zerocat.art
+Made with ❤️ by ZEROCAT
