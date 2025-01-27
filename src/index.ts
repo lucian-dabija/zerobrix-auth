@@ -13,3 +13,5 @@ export type {
   WalletAuthProps,
   ZeroBrixAuthProps
 } from './types';
+
+export { createWalletAuthHandler as createAuthApiHandler } from './server/handlers/wallet-auth';
